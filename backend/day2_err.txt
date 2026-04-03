@@ -1,0 +1,7 @@
+2026-04-03 09:49:55,083 [WARNING] API key missing for nemotron_ocr (Expected in env var: KEY_OCR)
+2026-04-03 09:49:55,087 [WARNING] API key missing for page_elements (Expected in env var: KEY_PAGE_ELEMENTS)
+2026-04-03 09:49:55,088 [WARNING] API key missing for table_structure (Expected in env var: KEY_TABLE_STRUCTURE)
+2026-04-03 09:49:55,088 [WARNING] API key missing for qwen_vl (Expected in env var: KEY_QWEN_VL)
+2026-04-03 09:49:55,088 [INFO] Initialized NIMClient with 8 active model clients.
+2026-04-03 09:49:58,185 [INFO] HTTP Request: POST https://integrate.api.nvidia.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-04-03 09:49:58,207 [INFO] Success | Model: llama_70b | Latency: 3.12s | Tokens: 566

@@ -1,0 +1,14 @@
+openai
+python-dotenv
+flask
+flask-cors
+pandas
+openpyxl
+sqlparse
+pymupdf
+pillow
+scipy
+numpy
+requests
+gunicorn
+python-dotenv

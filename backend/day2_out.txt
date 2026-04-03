@@ -1,0 +1,85 @@
+============================================================
+Test - Day 2 (Parsers & Profiler)
+============================================================
+
+--- TEST 1: CSV Parser ---
+Shape: 19x6
+Column Types: {'date': 'datetime', 'product': 'text', 'region': 'text', 'sales_amount': 'numeric', 'quantity': 'numeric', 'profit': 'numeric'}
+KPI Columns: ['sales_amount', 'quantity', 'profit']
+Warnings: ["Column 'profit' has 47.4% missing values", 'Found 17 duplicate rows']
+Null Pct: {'date': 0.0, 'product': 0.0, 'region': 0.0, 'sales_amount': 0.0, 'quantity': 0.0, 'profit': 47.4}
+Text Snippet: Dataset: sales_data.csv
+Shape: 19 rows × 6 columns
+Source: csv
+
+Columns and Types:
+date: datetime | ...
+
+--- TEST 2: Excel Parser ---
+Shape: 15x6
+Column Types: {'employee_id': 'numeric', 'name': 'text', 'department': 'text', 'salary': 'numeric', 'hire_date': 'datetime', 'performance_score': 'numeric'}
+KPI Columns: ['salary', 'performance_score']
+
+--- TEST 3: Large File Warning ---
+Warnings: ['File over 100,000 rows. Sampled 50,000 rows for analysis.']
+
+--- TEST 4: AI Text Content Quality ---
+Dataset: sales_data.csv
+Shape: 19 rows × 6 columns
+Source: csv
+
+Columns and Types:
+date: datetime | nulls: 0.0% | unique: 2
+product: text | nulls: 0.0% | unique: 1
+region: text | nulls: 0.0% | unique: 1
+sales_amount: numeric | nulls: 0.0% | unique: 2
+quantity: numeric | nulls: 0.0% | unique: 2
+profit: numeric | nulls: 47.4% | unique: 1
+
+Numeric Statistics:
+sales_amount: min=100.5, max=200.0, mean=147.63, std=51.04
+quantity: min=10.0, max=20.0, mean=14.74, std=5.13
+profit: min=50.0, max=50.0, mean=50.0, std=0.0
+
+KPI Columns Detected: ['sales_amount', 'quantity', 'profit']
+Date Columns Detected: ['date']
+Data Quality Warnings: ["Column 'profit' has 47.4% missing values", 'Found 17 duplicate rows']
+
+Sample Data (first 3 rows):
+[
+  {
+    "date": "2023-01-01",
+    "product": "Widget",
+    "region": "North",
+    "sales_amount": 100.5,
+    "quantity": 10,
+    "profit": 50.0
+  },
+  {
+    "date": "2023-01-02",
+    "product": "Widget",
+    "region": "North",
+    "sales_amount": 200.0,
+    "quantity": 20,
+    "profit": "None"
+  },
+  {
+    "date": "2023-01-01",
+    "product": "Widget",
+    "region": "North",
+    "sales_amount": 100.5,
+    "quantity": 10,
+    "profit": 50.0
+  }
+]
+
+
+--- TEST 5: NIM Integration Test ---
+
+🎯 AI Insight:
+The most significant business insight from this data is that the sales amount and quantity have a strong positive correlation, with the mean sales amount being $147.63 and the mean quantity being 14.74, indicating a potential opportunity to increase revenue by selling more units. However, the data is limited by the presence of 47.4% missing values in the profit column and 17 duplicate rows, which may impact the accuracy of any further analysis or insights that can be gleaned from this dataset.
+
+============================================================
+Tests Passed: 5/5
+Tests Failed: 0/5
+✅ Day 2 Complete — Parsers and Profiler ready!

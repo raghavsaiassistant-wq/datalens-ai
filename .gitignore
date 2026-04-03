@@ -1,0 +1,58 @@
+# Environment & secrets — NEVER commit these
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/*.pyo
+backend/.venv/
+backend/venv/
+*.egg-info/
+
+# Upload temp files
+backend/uploads/
+/tmp/
+
+# Test output files — don't need in repo
+backend/day3_out.txt
+backend/day4_out.txt
+backend/day3_err.txt
+backend/day4_err.txt
+backend/day5_out.txt
+backend/day5_err.txt
+
+# Env runner scripts — contain key references
+backend/run_day3_with_env.py
+backend/run_day4_with_env.py
+backend/run_day5_with_env.py
+backend/start_backend.py
+
+# Test files with temp data
+backend/test_day2.py
+backend/test_day3.py
+backend/test_day4.py
+backend/test_day5_api.py
+backend/test_client.py
+backend/test_mistral.py
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
