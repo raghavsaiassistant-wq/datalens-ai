@@ -10,5 +10,6 @@ pillow
 scipy
 numpy
 requests
+chardet
 gunicorn
 python-dotenv
