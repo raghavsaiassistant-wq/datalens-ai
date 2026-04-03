@@ -68,8 +68,8 @@ Copy backend/.env.example to backend/.env and fill in:
 ## Built By
 
 Raghav Modi — BI Analyst & AI Systems Builder
-- LinkedIn: linkedin.com/in/raghavm5090
-- Email: raghavm5090@gmail.com
+- LinkedIn: www.linkedin.com/in/raghav-modi-a94b60228
+- Email: raghavmodi2400@gmail.com
 
 ---
 *Built with NVIDIA NIM free APIs. Zero paid AI costs.*
