@@ -29,6 +29,7 @@ CORS(app, origins=[
     "https://datalens-ai.vercel.app",
     "https://*.vercel.app",
     "https://datalens-ai.onrender.com",
+    "https://datalensai.vercel.app",
 ])
 
 # Config
