@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getSeverityColor } from '../utils/chartHelpers';
-import { TriangleAlert, X } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 
 const AnomalyAlert = ({ anomalies }) => {
   const [flags, setFlags] = useState(anomalies || []);
@@ -21,7 +21,7 @@ const AnomalyAlert = ({ anomalies }) => {
         className="flex items-center gap-2 mb-4 cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <TriangleAlert className="text-warning" size={24} />
+        <AlertTriangle className="text-warning" size={24} />
         <h2 className="text-xl font-semibold text-white">Data Anomalies</h2>
         <span className="bg-white/10 text-white px-2 py-0.5 rounded-full text-xs font-bold">
           {flags.length} Detected
