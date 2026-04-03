@@ -28,6 +28,7 @@ CORS(app, origins=[
     "http://localhost:3000",
     "https://datalens-ai.vercel.app",
     "https://*.vercel.app",
+    "https://datalens-ai.onrender.com",
 ])
 
 # Config
