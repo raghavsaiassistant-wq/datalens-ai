@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, ChevronRight } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 const NextSteps = ({ steps }) => {
   if (!steps || steps.length === 0) return null;
@@ -55,10 +55,6 @@ const NextSteps = ({ steps }) => {
                   {step.reason}
                 </p>
                 
-                <div className="mt-6 flex items-center gap-2 text-[10px] font-mono text-white/20 uppercase tracking-widest group-hover/item:text-accent-blue/60 transition-colors">
-                  <span>Implementation Guide</span>
-                  <ChevronRight size={12} />
-                </div>
               </div>
             </div>
           );

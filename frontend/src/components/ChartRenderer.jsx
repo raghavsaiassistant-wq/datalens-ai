@@ -41,6 +41,28 @@ const ChartRenderer = ({ config }) => {
     trace = { labels: xData, values: yData, type: 'pie', marker: { colors }, hole: 0.6, textinfo: 'label+percent', textfont: { family: 'IBM Plex Mono', size: 10, color: '#fff' } };
   } else if (chart_type === 'histogram') {
     trace = { ...trace, x: xData, y: yData, type: 'bar' };
+  } else if (chart_type === 'heatmap') {
+    // data format: [{x: colA, y: colB, value: float}]
+    const colLabels = [...new Set(data.map(d => d.x))];
+    const rowLabels = [...new Set(data.map(d => d.y))];
+    const zMatrix = rowLabels.map(row =>
+      colLabels.map(col => {
+        const cell = data.find(d => d.x === col && d.y === row);
+        return cell ? cell.value : 0;
+      })
+    );
+    trace = {
+      x: colLabels,
+      y: rowLabels,
+      z: zMatrix,
+      type: 'heatmap',
+      colorscale: [[0, '#0A0C10'], [0.5, '#1a3a1a'], [1, accent]],
+      showscale: true,
+      hoverongaps: false,
+      text: zMatrix.map(row => row.map(v => v.toFixed(2))),
+      texttemplate: '%{text}',
+      colorbar: { tickfont: { color: '#8E9AAF', size: 9 } }
+    };
   }
 
   return (

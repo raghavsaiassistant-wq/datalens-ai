@@ -18,15 +18,16 @@ const STEPS = [
   { id: 6, label: "Your analysis is ready!", icon: CheckCircle2 }
 ];
 
-const AnalysisProgress = ({ progress, message }) => {
-  const [timeLeft, setTimeLeft] = useState(15);
+const AnalysisProgress = ({ progress, message, startTime }) => {
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (progress < 6 && timeLeft > 0) {
-      const timer = setInterval(() => setTimeLeft(prev => Math.max(0, prev - 1)), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [progress, timeLeft]);
+    if (progress >= 6 || !startTime) return;
+    const timer = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [progress, startTime]);
 
   return (
     <div className="fixed inset-0 bg-[#0A0C10] z-50 flex items-center justify-center p-6 overflow-hidden font-sans">
@@ -101,7 +102,7 @@ const AnalysisProgress = ({ progress, message }) => {
 
         {progress < 6 && (
           <p className="text-center mt-8 text-[#8E9AAF] font-mono text-[10px] uppercase tracking-widest animate-pulse">
-            Estimated time remaining: ~{timeLeft} seconds
+            Elapsed: {elapsed}s — AI models processing...
           </p>
         )}
       </div>

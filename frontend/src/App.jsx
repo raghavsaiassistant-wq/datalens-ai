@@ -11,7 +11,7 @@ import QAPanel from './components/QAPanel';
 import { RefreshCcw, AlertCircle } from 'lucide-react';
 
 function App() {
-  const { uploadFile, askQuestion, resetAnalysis, analysisResult, isLoading, loadingStep, progress, error } = useAnalysis();
+  const { uploadFile, askQuestion, resetAnalysis, analysisResult, isLoading, loadingStep, progress, error, uploadStartTime } = useAnalysis();
 
   return (
     <div className="min-h-screen bg-[#0A0C10] selection:bg-accent/30 selection:text-white font-sans text-white overflow-x-hidden relative">
@@ -42,7 +42,7 @@ function App() {
         {!analysisResult && !isLoading ? (
           <FileUpload onUpload={uploadFile} />
         ) : isLoading ? (
-          <AnalysisProgress progress={progress} message={loadingStep} />
+          <AnalysisProgress progress={progress} message={loadingStep} startTime={uploadStartTime} />
         ) : analysisResult ? (
           <div className="max-w-[1600px] mx-auto p-6 md:p-12 animate-in fade-in duration-1000 w-full">
             
@@ -70,8 +70,11 @@ function App() {
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-mono font-bold uppercase tracking-widest transition-all hover:border-white/20">
-                  Share Report
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-mono font-bold uppercase tracking-widest transition-all hover:border-white/20"
+                >
+                  Export Report
                 </button>
                 <button 
                   onClick={resetAnalysis}

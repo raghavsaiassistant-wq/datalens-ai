@@ -91,7 +91,9 @@ Return ONLY valid JSON."""
         
     def _call_vision_nim(self, nim_client, model_name, image_b64, prompt):
         from ai.nim_client import MODELS
-        client = nim_client._clients[model_name]
+        client = nim_client._clients.get(model_name)
+        if client is None:
+            raise ValueError(f"Vision model '{model_name}' is not loaded. Ensure {MODELS[model_name]['key_env']} is set in your .env file.")
         messages = [{
             "role": "user",
             "content": [

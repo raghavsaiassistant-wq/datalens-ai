@@ -10,11 +10,13 @@ export const useAnalysis = () => {
   const [progress, setProgress] = useState(0); // 1-6
   const [error, setError] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [uploadStartTime, setUploadStartTime] = useState(null);
 
   const uploadFile = async (file) => {
     setIsLoading(true);
     setError(null);
     setProgress(1);
+    setUploadStartTime(Date.now());
 
     const formData = new FormData();
     formData.append("file", file);
@@ -33,14 +35,18 @@ export const useAnalysis = () => {
       if (!jobId) throw new Error("No Job ID returned from server.");
 
       // 2. Poll Status
+      let retryCount = 0;
+      const MAX_RETRIES = 10;
+
       const poll = async () => {
         try {
           const statusRes = await axios.get(`${API_BASE}/api/status/${jobId}`);
-          
+
           if (!statusRes.data.success) {
             throw new Error(statusRes.data.error || "Failed to fetch status.");
           }
 
+          retryCount = 0; // reset on successful response
           const { status, progress: step, message, result } = statusRes.data.data;
           const jobErr = statusRes.data.error;
 
@@ -59,7 +65,13 @@ export const useAnalysis = () => {
             setTimeout(poll, 800);
           }
         } catch (pollErr) {
-          setError(pollErr.message || "Connection lost. Retrying...");
+          retryCount += 1;
+          if (retryCount >= MAX_RETRIES) {
+            setError("Connection lost after multiple retries. Please check your network and try again.");
+            setIsLoading(false);
+            return;
+          }
+          setLoadingStep("Connection interrupted. Retrying...");
           setTimeout(poll, 2000);
         }
       };
@@ -84,7 +96,10 @@ export const useAnalysis = () => {
     setAnalysisResult(null);
     setSessionId(null);
     setError(null);
+    setLoadingStep("");
+    setProgress(0);
+    setUploadStartTime(null);
   };
 
-  return { uploadFile, askQuestion, resetAnalysis, analysisResult, isLoading, loadingStep, progress, error, sessionId };
+  return { uploadFile, askQuestion, resetAnalysis, analysisResult, isLoading, loadingStep, progress, error, sessionId, uploadStartTime };
 };

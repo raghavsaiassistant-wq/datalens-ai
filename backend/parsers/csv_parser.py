@@ -19,7 +19,7 @@ class CSVParser(BaseParser):
         warnings = []
         
         # 1. Validate extension
-        self._validate_file(file_path, ['.csv'])
+        self._validate_file(file_path, ['.csv', '.txt'])
         
         # 2. Detect encoding
         encoding = self._detect_encoding(file_path)

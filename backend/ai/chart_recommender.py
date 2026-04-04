@@ -62,8 +62,9 @@ class ChartRecommender:
                     grouped = sub_df.resample('ME').sum().reset_index()
                 else:
                     grouped = sub_df.groupby(dt_col, as_index=False)[k].sum()
-                
-                limit = grouped.head(100).copy()
+
+                # Show all resampled points (already aggregated), cap at 200
+                limit = grouped.head(200).copy()
                 limit[dt_col] = limit[dt_col].astype(str)
                 data_records = [{"x": str(row[dt_col]), "y": float(row[k])} for _, row in limit.iterrows()]
                 
@@ -74,12 +75,12 @@ class ChartRecommender:
                     data=data_records
                 ))
                 
-        # RULE 3: Bar chart
+        # RULE 3: Bar chart — sort by value descending, show top 20 categories
         if best_cat and kpis:
             k = kpis[0]
             grouped = df.groupby(best_cat, as_index=False)[k].sum()
-            limit = grouped.head(100)
-            data_records = [{"x": str(row[best_cat]), "y": float(row[k])} for _, row in limit.iterrows()]
+            grouped = grouped.sort_values(k, ascending=False).head(20)
+            data_records = [{"x": str(row[best_cat]), "y": float(row[k])} for _, row in grouped.iterrows()]
             
             charts.append(ChartConfig(
                 chart_type="bar", title=f"{k} by {best_cat}",
@@ -100,8 +101,9 @@ class ChartRecommender:
                     val = corr.loc[best_pair[0], best_pair[1]]
                     if abs(val) > 0.3:
                         c1, c2 = best_pair
-                        limit = sub.head(100)
-                        data_records = [{"x": float(row[c1]), "y": float(row[c2])} for _, row in limit.iterrows()]
+                        # Random sample for scatter to avoid first-row bias
+                        sample = sub.sample(min(200, len(sub)), random_state=42)
+                        data_records = [{"x": float(row[c1]), "y": float(row[c2])} for _, row in sample.iterrows()]
                         charts.append(ChartConfig(
                             chart_type="scatter", title=f"{c1} vs {c2}",
                             x_col=c1, y_col=c2, color_col=None, aggregation=None,

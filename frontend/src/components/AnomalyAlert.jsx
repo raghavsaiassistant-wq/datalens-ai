@@ -60,7 +60,7 @@ const AnomalyAlert = ({ anomalies }) => {
                     {flag.column}
                   </div>
                   <div className={`px-2 py-1 rounded ${bg} border border-white/5 text-[9px] font-mono font-bold uppercase tracking-widest`} style={{ color }}>
-                    {flag.anomaly_type.replace('_', ' ')}
+                    {flag.anomaly_type.replaceAll('_', ' ')}
                   </div>
                 </div>
                 <p className="text-sm text-[#8E9AAF] leading-relaxed font-serif italic border-l border-white/5 pl-3">

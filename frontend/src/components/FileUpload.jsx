@@ -116,7 +116,7 @@ const FileUpload = ({ onUpload }) => {
           
           <div className="mt-6 flex items-center gap-2 text-[10px] font-mono text-[#8E9AAF] uppercase tracking-widest opacity-60">
             <FileType size={12} className="text-accent" />
-            <span>Encrypted Transfer • 25MB Limit</span>
+            <span>Secure Upload • 25MB Limit</span>
           </div>
         </div>
       </div>

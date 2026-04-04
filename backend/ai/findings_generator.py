@@ -46,24 +46,19 @@ class FindingsGenerator:
 
         update_progress(3, "🧠 Intelligent agents are processing your data...")
 
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            # We start all three in parallel. 
-            # Note: Summarizer will now work without explicit anomalies if they aren't ready,
-            # or we accept that it runs on the profile data primarily.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            # Phase 1: Run anomaly detection + chart recommendation in parallel
             future_anomalies = executor.submit(detector.detect, profile, nim_client)
             future_charts = executor.submit(recommender.recommend, profile)
-            # Parallelize summary + findings + next steps in ONE call or multiple?
-            # Keeping it in one call for coherence, but running it in parallel with others.
-            future_summary = executor.submit(summarizer.summarize, profile, [], nim_client)
 
-            # Join results
             detection_result = future_anomalies.result()
-            update_progress(4, "📊 Dashboard visualization models ready.")
-            
             charts_result = future_charts.result()
-            update_progress(5, "✨ AI Insight synthesis complete.")
-            
-            summary = future_summary.result()
+
+        update_progress(4, "📊 Dashboard visualization models ready.")
+
+        # Phase 2: Summarizer runs after anomaly detection so it receives real anomaly data
+        summary = summarizer.summarize(profile, detection_result, nim_client)
+        update_progress(5, "✨ AI Insight synthesis complete.")
 
         total_time = round(time.time() - start_time, 2)
         logger.info(f"AI Pipeline completed in {total_time}s")

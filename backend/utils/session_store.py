@@ -7,10 +7,21 @@ import threading
 import time
 from typing import Optional, Dict
 
+CLEANUP_INTERVAL_SECONDS = 1800  # run cleanup every 30 minutes
+
 class SessionStore:
     def __init__(self):
         self._store = {}
         self._lock = threading.Lock()
+        self._start_cleanup_thread()
+
+    def _start_cleanup_thread(self):
+        def _run():
+            while True:
+                time.sleep(CLEANUP_INTERVAL_SECONDS)
+                self.cleanup_expired()
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
         
     def save(self, session_id: str, data: dict) -> None:
         self.cleanup_expired()

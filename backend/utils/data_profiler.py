@@ -123,8 +123,8 @@ class DataProfiler:
         text_content += f"Data Quality Warnings: {warnings}\n\n"
         text_content += f"Sample Data (first 3 rows):\n{sample_str}\n"
         
-        if len(text_content) > 3000:
-            text_content = text_content[:2997] + "..."
+        if len(text_content) > 8000:
+            text_content = text_content[:7997] + "..."
 
         # STEP 9: Return DataProfile
         return DataProfile(

@@ -6,13 +6,12 @@ const SummaryPanel = ({ summary, healthScore, profile }) => {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (index < summary.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(prev => prev + summary[index]);
-        setIndex(prev => prev + 1);
-      }, 15);
-      return () => clearTimeout(timeout);
-    }
+    if (!summary || index >= summary.length) return;
+    const timeout = setTimeout(() => {
+      setDisplayedText(prev => prev + summary[index]);
+      setIndex(prev => prev + 1);
+    }, 15);
+    return () => clearTimeout(timeout);
   }, [index, summary]);
 
   const getHealthUI = (score) => {
@@ -72,7 +71,7 @@ const SummaryPanel = ({ summary, healthScore, profile }) => {
         <div className="min-h-[120px]">
           <p className="text-white/90 leading-relaxed text-lg font-serif italic">
             {displayedText}
-            {index < summary.length && <span className="inline-block w-2 h-5 bg-accent ml-1 animate-pulse mb-[-4px]"></span>}
+            {summary && index < summary.length && <span className="inline-block w-2 h-5 bg-accent ml-1 animate-pulse mb-[-4px]"></span>}
           </p>
         </div>
       </div>

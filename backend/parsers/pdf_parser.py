@@ -93,12 +93,13 @@ class PDFParser(BaseParser):
         return profile
         
     def _call_vision_nim(self, nim_client, image_b64, prompt):
-        model_name = "nemotron_ocr" 
-        try:
-            client = nim_client._clients[model_name]
-        except KeyError:
-             client = nim_client._clients["qwen_vl"]
-             model_name = "qwen_vl"
+        model_name = "nemotron_ocr"
+        client = nim_client._clients.get(model_name)
+        if client is None:
+            model_name = "qwen_vl"
+            client = nim_client._clients.get(model_name)
+        if client is None:
+            raise ValueError("No vision OCR model loaded. Ensure KEY_OCR or KEY_QWEN_VL is set in your .env file.")
              
         from ai.nim_client import MODELS
         messages = [{
