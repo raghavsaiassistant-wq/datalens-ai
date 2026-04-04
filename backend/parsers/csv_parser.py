@@ -49,11 +49,16 @@ class CSVParser(BaseParser):
         for c in str_cols:
             df[c] = df[c].apply(lambda x: x.strip() if isinstance(x, str) else x)
             
-        # 7. Try to parse datetime
+        # 7. Try to parse datetime — use format='mixed' + errors='coerce' so any
+        #    format ("March 16, 2024", "16-Mar-24", "2024/03/16", ISO 8601, etc.)
+        #    is handled gracefully; unparseable values become NaT instead of crashing
         for c in df.columns:
-            if any(x in str(c).lower() for x in ["date", "time"]):
+            if any(x in str(c).lower() for x in ["date", "time", "year", "month"]):
                 try:
-                    df[c] = pd.to_datetime(df[c])
+                    converted = pd.to_datetime(df[c], format='mixed', dayfirst=False, errors='coerce')
+                    # Only replace if at least half the values parsed successfully
+                    if converted.notna().sum() >= len(converted) * 0.5:
+                        df[c] = converted
                 except Exception:
                     pass
                     

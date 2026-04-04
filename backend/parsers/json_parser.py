@@ -41,13 +41,23 @@ class JSONParser(BaseParser):
             raise ValueError("Cannot parse JSON structure into tabular format")
             
         cols_to_drop = []
-        for c in df.columns:
-            if df[c].apply(lambda x: isinstance(x, (dict, list))).any():
-                flattened = pd.json_normalize(df[c])
-                flattened.columns = [f"{c}_{fc}" for fc in flattened.columns]
-                df = pd.concat([df, flattened], axis=1)
+        for c in list(df.columns)[:20]:  # cap at 20 cols to avoid slow flattening on huge schemas
+            try:
+                if df[c].apply(lambda x: isinstance(x, (dict, list))).any():
+                    flattened = pd.json_normalize(df[c].dropna().head(1000))
+                    if len(flattened.columns) > 50:
+                        # Too many nested keys — just drop the column
+                        cols_to_drop.append(c)
+                        warnings.append(f"Dropped deeply nested column '{c}' (>{len(flattened.columns)} sub-fields)")
+                        continue
+                    flattened.columns = [f"{c}_{fc}" for fc in flattened.columns]
+                    flattened.index = df.index[:len(flattened)]
+                    df = pd.concat([df, flattened], axis=1)
+                    cols_to_drop.append(c)
+                    warnings.append(f"Flattened nested column '{c}'")
+            except Exception:
                 cols_to_drop.append(c)
-                warnings.append(f"Flattened nested column '{c}'")
+                warnings.append(f"Skipped un-flattenable column '{c}'")
                 
         if cols_to_drop:
             df.drop(columns=cols_to_drop, inplace=True)

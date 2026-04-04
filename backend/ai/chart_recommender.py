@@ -56,30 +56,35 @@ class ChartRecommender:
         if date_cols and kpis:
             dt_col = date_cols[0]
             for k in kpis[:2]:
-                sub_df = df[[dt_col, k]].dropna().copy()
-                sub_df[dt_col] = pd.to_datetime(sub_df[dt_col])
-                date_span = (sub_df[dt_col].max() - sub_df[dt_col].min()).days
-                if date_span > 90:
-                    sub_df.set_index(dt_col, inplace=True)
-                    # 'ME' is pandas ≥2.2; fall back to 'M' for older versions
-                    try:
-                        grouped = sub_df.resample('ME').sum().reset_index()
-                    except ValueError:
-                        grouped = sub_df.resample('M').sum().reset_index()
-                else:
-                    grouped = sub_df.groupby(dt_col, as_index=False)[k].sum()
+                try:
+                    sub_df = df[[dt_col, k]].dropna().copy()
+                    sub_df[dt_col] = pd.to_datetime(sub_df[dt_col], format='mixed', dayfirst=False, errors='coerce')
+                    sub_df = sub_df.dropna(subset=[dt_col])  # drop rows where date failed to parse
+                    if sub_df.empty:
+                        continue
+                    date_span = (sub_df[dt_col].max() - sub_df[dt_col].min()).days
+                    if date_span > 90:
+                        sub_df = sub_df.set_index(dt_col).sort_index()  # must be monotonic for resample
+                        try:
+                            grouped = sub_df.resample('ME').sum().reset_index()
+                        except ValueError:
+                            grouped = sub_df.resample('M').sum().reset_index()
+                    else:
+                        grouped = sub_df.groupby(dt_col, as_index=False)[k].sum()
 
-                # Show all resampled points (already aggregated), cap at 200
-                limit = grouped.head(200).copy()
-                limit[dt_col] = limit[dt_col].astype(str)
-                data_records = [{"x": str(row[dt_col]), "y": float(row[k])} for _, row in limit.iterrows()]
-                
-                charts.append(ChartConfig(
-                    chart_type="line", title=f"{k} Over Time",
-                    x_col=dt_col, y_col=k, color_col=None, aggregation="sum",
-                    priority=2, insight_hint=f"Track {k} trends over time",
-                    data=data_records
-                ))
+                    # Show all resampled points (already aggregated), cap at 200
+                    limit = grouped.head(200).copy()
+                    limit[dt_col] = limit[dt_col].astype(str)
+                    data_records = [{"x": str(row[dt_col]), "y": float(row[k])} for _, row in limit.iterrows()]
+                    if data_records:
+                        charts.append(ChartConfig(
+                            chart_type="line", title=f"{k} Over Time",
+                            x_col=dt_col, y_col=k, color_col=None, aggregation="sum",
+                            priority=2, insight_hint=f"Track {k} trends over time",
+                            data=data_records
+                        ))
+                except Exception:
+                    pass  # Skip this time series chart on any date-related error
                 
         # RULE 3: Bar chart — sort by value descending, show top 20 categories
         if best_cat and kpis:
@@ -98,10 +103,14 @@ class ChartRecommender:
         # RULE 4: Scatter plot
         if len(num_cols) >= 2:
             sub = df[num_cols].dropna()
-            if not sub.empty:
+            # Remove zero-variance columns — corr() returns NaN for them, crashing idxmax()
+            valid_cols = [c for c in sub.columns if sub[c].std() > 0]
+            if len(valid_cols) >= 2:
+                sub = sub[valid_cols]
+            if not sub.empty and len(sub.columns) >= 2:
                 corr = sub.corr()
                 corr_vals = corr.abs().unstack()
-                corr_vals = corr_vals[corr_vals < 1.0].dropna()
+                corr_vals = corr_vals[(corr_vals < 1.0) & corr_vals.notna()]
                 if not corr_vals.empty:
                     best_pair = corr_vals.idxmax()
                     val = corr.loc[best_pair[0], best_pair[1]]
@@ -156,7 +165,11 @@ class ChartRecommender:
         # RULE 7: Correlation heatmap
         if len(num_cols) >= 4:
             sub = df[num_cols].dropna()
-            if not sub.empty:
+            # Only keep columns with variance > 0 for meaningful correlation
+            valid_cols = [c for c in sub.columns if sub[c].std() > 0]
+            if len(valid_cols) >= 4:
+                sub = sub[valid_cols]
+            if not sub.empty and len(sub.columns) >= 2:
                 corr = sub.corr()
                 data_records = []
                 for idx in corr.index:

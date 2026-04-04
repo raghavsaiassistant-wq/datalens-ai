@@ -64,6 +64,33 @@ class DataProfiler:
         has_datetime = any(v == "datetime" for v in column_types.values())
         has_numeric = any(v == "numeric" for v in column_types.values())
 
+        # STEP 4b: Promote numeric-string columns (e.g. "$1,234", "12.5%", "1 000")
+        for col in list(columns):
+            if column_types[col] in ("categorical", "text"):
+                series = df[col].dropna()
+                if len(series) < 2:
+                    continue
+                cleaned = series.astype(str).str.replace(r'[\$,€£¥\s%]', '', regex=True)
+                try:
+                    num = pd.to_numeric(cleaned, errors='coerce')
+                    if num.notna().sum() / len(series) >= 0.8:
+                        df[col] = pd.to_numeric(
+                            df[col].astype(str).str.replace(r'[\$,€£¥\s%]', '', regex=True),
+                            errors='coerce'
+                        )
+                        column_types[col] = "numeric"
+                        dtypes[col] = str(df[col].dtype)
+                        has_numeric = True
+                except Exception:
+                    pass
+
+        # STEP 4c: Drop datetime classification for columns where all values are NaT
+        for col in list(columns):
+            if column_types[col] == "datetime" and pd.api.types.is_datetime64_any_dtype(df[col]):
+                if df[col].notna().sum() == 0:
+                    column_types[col] = "text"
+        has_datetime = any(v == "datetime" for v in column_types.values())
+
         # STEP 5: KPI column detection
         kpi_keywords = ["revenue", "sales", "profit", "amount", "total", "count", 
                         "price", "cost", "value", "quantity", "qty", "income", 

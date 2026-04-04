@@ -17,14 +17,21 @@ class Summarizer:
 
     def summarize(self, profile: DataProfile, anomalies: List[AnomalyFlag], nim_client: NIMClient) -> Dict[str, Any]:
         
+        date_range = 'No date column'
         if profile.has_datetime:
             date_col = next((c for c, t in profile.column_types.items() if t == "datetime"), None)
-            if date_col:
-                date_range = str(profile.df[date_col].min()) + " to " + str(profile.df[date_col].max())
-            else:
-                date_range = 'No date column'
-        else:
-            date_range = 'No date column'
+            if date_col and date_col in profile.df.columns:
+                try:
+                    col_series = profile.df[date_col].dropna()
+                    if len(col_series) > 0:
+                        d_min = col_series.min()
+                        d_max = col_series.max()
+                        # Guard against NaT (failed date coercion)
+                        import pandas as _pd
+                        if _pd.notna(d_min) and _pd.notna(d_max):
+                            date_range = str(d_min)[:10] + " to " + str(d_max)[:10]
+                except Exception:
+                    pass
         
         top5_stats = {k: profile.numeric_summary[k] for k in list(profile.numeric_summary.keys())[:5]}
         stat_lines = "\\n".join([f"- {k}: {v}" for k, v in top5_stats.items()])

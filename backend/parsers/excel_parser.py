@@ -81,11 +81,13 @@ class ExcelParser(BaseParser):
         for c in str_cols:
             df[c] = df[c].apply(lambda x: x.strip() if isinstance(x, str) else x)
             
-        # 7. Try to parse datetime
+        # 7. Try to parse datetime — same robust strategy as csv_parser
         for c in df.columns:
-            if any(x in str(c).lower() for x in ["date", "time"]):
+            if any(x in str(c).lower() for x in ["date", "time", "year", "month"]):
                 try:
-                    df[c] = pd.to_datetime(df[c])
+                    converted = pd.to_datetime(df[c], format='mixed', dayfirst=False, errors='coerce')
+                    if converted.notna().sum() >= len(converted) * 0.5:
+                        df[c] = converted
                 except Exception:
                     pass
                     
