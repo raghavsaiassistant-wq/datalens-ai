@@ -33,17 +33,31 @@ class AnomalyDetector:
         
         caught_indexes = {c: set() for c in numeric_cols}
 
+        def _safe_idx(idx):
+            """Convert row index to int safely; return -1 if not convertible."""
+            try:
+                return int(idx)
+            except (ValueError, TypeError):
+                return -1
+
         # STEP 1: Z-Score Outliers
         for col in numeric_cols:
             series = df[col].dropna()
             if len(series) < 10:
                 continue
-            z_scores = stats.zscore(series, nan_policy='omit')
+            # Cast to float to avoid bool/integer edge cases with zscore
+            series = series.astype(float)
+            try:
+                z_scores = stats.zscore(series, nan_policy='omit')
+            except Exception:
+                continue
             col_anomalies = 0
-            
+
             for idx, z in zip(series.index, z_scores):
                 if col_anomalies >= 3:
                     break
+                if pd.isna(z) or np.isinf(z):
+                    continue
                 if abs(z) > 3.0:
                     caught_indexes[col].add(idx)
                     val = series.loc[idx]
@@ -51,22 +65,24 @@ class AnomalyDetector:
                     atype = "outlier_high" if z > 3.0 else "outlier_low"
                     val = float(val) if hasattr(val, 'item') else val
                     anomalies.append(AnomalyFlag(
-                        column=col, value=val, row_index=int(idx),
+                        column=col, value=val, row_index=_safe_idx(idx),
                         anomaly_type=atype, severity=sev, explanation="", z_score=float(z)
                     ))
                     col_anomalies += 1
 
         # STEP 2: IQR Fence
         for col in numeric_cols:
-            series = df[col].dropna()
+            series = df[col].dropna().astype(float)
             if len(series) < 10:
                 continue
             Q1 = series.quantile(0.25)
             Q3 = series.quantile(0.75)
             IQR = Q3 - Q1
+            if IQR == 0:
+                continue  # zero-variance column, skip
             lower_fence = Q1 - 1.5 * IQR
             upper_fence = Q3 + 1.5 * IQR
-            
+
             col_anomalies = 0
             for idx, val in series.items():
                 if col_anomalies >= 2:
@@ -78,7 +94,7 @@ class AnomalyDetector:
                     val_native = float(val) if hasattr(val, 'item') else val
                     atype = "outlier_high" if val > upper_fence else "outlier_low"
                     anomalies.append(AnomalyFlag(
-                        column=col, value=val_native, row_index=int(idx),
+                        column=col, value=val_native, row_index=_safe_idx(idx),
                         anomaly_type=atype, severity="medium", explanation="", z_score=None
                     ))
                     col_anomalies += 1
@@ -90,19 +106,20 @@ class AnomalyDetector:
                 date_col = date_cols[0]
                 df_sorted = df.sort_values(by=date_col)
                 for col in numeric_cols:
-                    series = df_sorted[col]
-                    # We need to pct_change only on valid data sequences
+                    series = df_sorted[col].astype(float)
                     pct_change = series.pct_change()
                     col_anomalies = 0
                     for idx, change in pct_change.items():
-                        if pd.isna(change): continue
+                        # Skip NaN and inf (inf happens when previous value was 0)
+                        if pd.isna(change) or np.isinf(change):
+                            continue
                         if col_anomalies >= 2:
                             break
                         if abs(change) > 0.5:
                             val = series.loc[idx]
                             val_native = float(val) if hasattr(val, 'item') else val
                             anomalies.append(AnomalyFlag(
-                                column=col, value=val_native, row_index=int(idx),
+                                column=col, value=val_native, row_index=_safe_idx(idx),
                                 anomaly_type="sudden_change", severity="high", explanation="", z_score=None
                             ))
                             col_anomalies += 1

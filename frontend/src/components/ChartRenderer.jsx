@@ -15,9 +15,18 @@ const ChartRenderer = ({ config }) => {
     );
   }
 
+  // Guard: empty or missing data renders nothing rather than crashing
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-[#8E9AAF] text-xs font-mono opacity-40">
+        No data available
+      </div>
+    );
+  }
+
   const layout = buildPlotlyLayout("");
   const pltConfig = buildPlotlyConfig();
-  
+
   const xData = data.map(d => d.x);
   const yData = data.map(d => d.y);
   

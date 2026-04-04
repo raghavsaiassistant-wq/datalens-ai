@@ -96,6 +96,7 @@ export const useAnalysis = () => {
     setAnalysisResult(null);
     setSessionId(null);
     setError(null);
+    setIsLoading(false);
     setLoadingStep("");
     setProgress(0);
     setUploadStartTime(null);

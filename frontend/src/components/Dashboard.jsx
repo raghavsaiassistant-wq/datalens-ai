@@ -65,7 +65,7 @@ const Dashboard = ({ charts }) => {
                 </div>
                 <div className="shrink-0">
                   <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-3 py-1.5 bg-white/[0.03] rounded-full border border-white/10 text-white/40 group-hover:text-accent group-hover:border-accent/40 transition-all duration-500">
-                    {chart.chart_type.replace('_', ' ')}
+                    {chart.chart_type.replaceAll('_', ' ')}
                   </span>
                 </div>
               </div>

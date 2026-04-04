@@ -92,4 +92,17 @@ class FindingsGenerator:
     def _dataclass_to_dict(self, obj: Any) -> Dict[str, Any]:
         from dataclasses import asdict
         d = asdict(obj)
-        return d
+        return self._sanitize(d)
+
+    def _sanitize(self, obj: Any) -> Any:
+        """Recursively replace float inf/nan with None so JSON serialization never crashes."""
+        import math
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+            return obj
+        if isinstance(obj, dict):
+            return {k: self._sanitize(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [self._sanitize(v) for v in obj]
+        return obj

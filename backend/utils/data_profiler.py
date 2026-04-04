@@ -43,6 +43,9 @@ class DataProfiler:
 
             if pd.api.types.is_datetime64_any_dtype(dt) or any(x in col_lower for x in ["date", "time", "year", "month", "day"]):
                 column_types[col] = "datetime"
+            elif pd.api.types.is_bool_dtype(dt):
+                # bool must come before numeric — pandas treats bool as numeric dtype
+                column_types[col] = "categorical"
             elif pd.api.types.is_numeric_dtype(dt):
                 column_types[col] = "numeric"
             elif col_lower.endswith("_id") or col_lower == "id":
@@ -74,6 +77,8 @@ class DataProfiler:
 
         # STEP 6: Numeric summary
         numeric_cols = [c for c in columns if column_types[c] == "numeric"]
+        # Exclude any residual bool columns that pandas may still consider numeric
+        numeric_cols = [c for c in numeric_cols if not pd.api.types.is_bool_dtype(df[c].dtype)]
         numeric_summary = {}
         if numeric_cols:
             desc = df[numeric_cols].describe().to_dict()

@@ -31,7 +31,9 @@ class ChartRecommender:
         
         kpis = profile.kpi_columns[:4]
         date_cols = [c for c, t in profile.column_types.items() if t == "datetime"]
-        num_cols = [c for c, t in profile.column_types.items() if t == "numeric"]
+        # Exclude bool columns from numeric ops to avoid numpy boolean subtract errors
+        num_cols = [c for c, t in profile.column_types.items()
+                    if t == "numeric" and not pd.api.types.is_bool_dtype(df[c].dtype)]
         cat_cols = [c for c, t in profile.column_types.items() if t in ("categorical", "text")]
         
         cat_cardinality = {c: df[c].nunique() for c in cat_cols}
@@ -59,7 +61,11 @@ class ChartRecommender:
                 date_span = (sub_df[dt_col].max() - sub_df[dt_col].min()).days
                 if date_span > 90:
                     sub_df.set_index(dt_col, inplace=True)
-                    grouped = sub_df.resample('ME').sum().reset_index()
+                    # 'ME' is pandas ≥2.2; fall back to 'M' for older versions
+                    try:
+                        grouped = sub_df.resample('ME').sum().reset_index()
+                    except ValueError:
+                        grouped = sub_df.resample('M').sum().reset_index()
                 else:
                     grouped = sub_df.groupby(dt_col, as_index=False)[k].sum()
 
