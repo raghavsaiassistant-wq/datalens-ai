@@ -14,5 +14,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('plotly.js')) return 'plotly';
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })
