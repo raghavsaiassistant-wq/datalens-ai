@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-# Add backend directory to sys path so internal imports resolve correctly
+import threading
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -23,6 +23,11 @@ from utils.session_store import SessionStore
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 app = Flask(__name__)
+
+# Job Store for Polling
+# Format: { job_id: { "status": "processing", "progress": 1, "message": "...", "result": None, "error": None } }
+JOBS = {}
+JOBS_LOCK = threading.Lock()
 CORS(app, origins=[
     "http://localhost:5173",
     "http://localhost:3000",
@@ -46,77 +51,135 @@ session_store = SessionStore()
 
 @app.route("/api/health", methods=["GET"])
 def health():
+    nim_status = nim_client.health_check()
+    is_healthy = all("ok" in s for s in nim_status.values() if s != "no_key")
     return jsonify({
-        "status": "ok",
-        "version": "1.0.0",
-        "models_available": list(nim_client._clients.keys()) if hasattr(nim_client, '_clients') else [],
-        "supported_extensions": router.get_supported_extensions()
+        "success": True,
+        "data": {
+            "status": "healthy" if is_healthy else "degraded",
+            "nim": nim_status,
+            "version": "1.0.0"
+        },
+        "error": None
     })
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
     if "file" not in request.files:
-        return jsonify({"error": "No file parameter found"}), 400
+        return jsonify({"success": False, "data": None, "error": "No file parameter found"}), 400
         
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"error": "Empty filename"}), 400
+        return jsonify({"success": False, "data": None, "error": "Empty filename"}), 400
         
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in router.get_supported_extensions():
-        return jsonify({"error": f"Unsupported file extension {ext}"}), 400
+        return jsonify({"success": False, "data": None, "error": f"Unsupported file extension {ext}"}), 400
         
     # Save file
     safe_name = secure_filename(file.filename)
     if not safe_name: safe_name = "upload" + ext
     file_id = str(uuid.uuid4())
+    job_id = f"job_{file_id}"
     save_path = os.path.join(UPLOAD_FOLDER, f"{file_id}_{safe_name}")
     file.save(save_path)
     
-    try:
-        # Route and Profile
-        profile = router.route(save_path, safe_name, nim_client=nim_client)
-        # AI Generator Pipeline
-        analysis_result = generator.generate(profile, nim_client)
-    except ValueError as ve:
-        return jsonify({"error": f"Validation Error: {str(ve)}"}), 422
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"AI Processing Error: {str(e)}"}), 500
-    finally:
-        # Cleanup file
-        if os.path.exists(save_path):
-            os.remove(save_path)
+    # Initialize Job
+    with JOBS_LOCK:
+        JOBS[job_id] = {
+            "status": "processing",
+            "progress": 1,
+            "message": "📂 Reading your file...",
+            "result": None,
+            "error": None,
+            "file_name": safe_name,
+            "created_at": time.time()
+        }
+
+    # Run Analysis in Background
+    def background_analysis(jid, path, name):
+        try:
+            def update_cb(step, msg):
+                with JOBS_LOCK:
+                    if jid in JOBS:
+                        JOBS[jid]["progress"] = step
+                        JOBS[jid]["message"] = msg
+
+            # 1. Route/Profile (Step 1-2 happens inside generator now via callback)
+            profile = router.route(path, name, nim_client=nim_client)
             
-    # Save session
-    session_id = str(uuid.uuid4())
-    session_data = {
-        "result": analysis_result,
-        "profile_text": profile.text_content if hasattr(profile, "text_content") else "",
-        "file_name": safe_name
-    }
-    session_store.save(session_id, session_data)
+            # 2. AI Generation
+            analysis_result = generator.generate(profile, nim_client, progress_callback=update_cb)
+            
+            # 3. Finalize
+            session_id = str(uuid.uuid4())
+            session_data = {
+                "result": analysis_result,
+                "profile_text": profile.text_content if hasattr(profile, "text_content") else "",
+                "file_name": name
+            }
+            session_store.save(session_id, session_data)
+            
+            with JOBS_LOCK:
+                if jid in JOBS:
+                    JOBS[jid]["status"] = "completed"
+                    JOBS[jid]["progress"] = 6
+                    JOBS[jid]["message"] = "🎉 Analysis complete!"
+                    JOBS[jid]["result"] = {
+                        "session_id": session_id,
+                        "data": analysis_result
+                    }
+        except Exception as e:
+            logging.error(f"Job {jid} failed: {e}")
+            with JOBS_LOCK:
+                if jid in JOBS:
+                    JOBS[jid]["status"] = "failed"
+                    JOBS[jid]["error"] = str(e)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
+    thread = threading.Thread(target=background_analysis, args=(job_id, save_path, safe_name))
+    thread.start()
     
     return jsonify({
-        "status": "success",
-        "session_id": session_id,
-        "processing_time": analysis_result.get("processing_time", 0),
-        "data": analysis_result
+        "success": True,
+        "data": {
+            "job_id": job_id
+        },
+        "error": None
     })
+
+@app.route("/api/status/<job_id>", methods=["GET"])
+def get_status(job_id):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if not job:
+            return jsonify({"success": False, "data": None, "error": "Job not found"}), 404
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "status": job["status"],
+                "progress": job["progress"],
+                "message": job["message"],
+                "result": job["result"]
+            },
+            "error": job["error"]
+        })
 
 @app.route("/api/ask", methods=["POST"])
 def ask():
     req = request.get_json()
     if not req or "question" not in req or "session_id" not in req:
-        return jsonify({"error": "Missing question or session_id payload"}), 400
+        return jsonify({"success": False, "data": None, "error": "Missing question or session_id payload"}), 400
         
     session_id = req["session_id"]
     question = req["question"]
     
     session = session_store.get(session_id)
     if not session:
-        return jsonify({"error": "Session expired or not found. Please re-upload your data."}), 404
+        return jsonify({"success": False, "data": None, "error": "Session expired or not found. Please re-upload your data."}), 404
         
     profile_text = session.get("profile_text", "")
     
@@ -130,25 +193,27 @@ def ask():
             model_name = "mistral_7b"
             
         answer = nim_client.chat(model_name=model_name, user_prompt=user, system_prompt=system, max_tokens=300)
-        answer = nim_client._strip_thinking(answer)
     except Exception as e:
-        return jsonify({"error": f"Chat Failed: {str(e)}"}), 500
+        return jsonify({"success": False, "data": None, "error": f"Chat Failed: {str(e)}"}), 500
         
     return jsonify({
-        "status": "success",
-        "answer": answer,
-        "session_id": session_id
+        "success": True,
+        "data": {
+            "answer": answer,
+            "session_id": session_id
+        },
+        "error": None
     })
 
 @app.route("/api/session/<session_id>", methods=["GET"])
 def get_session(session_id):
     session = session_store.get(session_id)
     if not session:
-        return jsonify({"error": "Session not found"}), 404
+        return jsonify({"success": False, "data": None, "error": "Session not found"}), 404
     return jsonify({
-        "status": "success",
-        "session_id": session_id,
-        "data": session["result"]
+        "success": True,
+        "data": session["result"],
+        "error": None
     })
 
 @app.route("/api/session/<session_id>", methods=["DELETE"])
@@ -158,15 +223,15 @@ def delete_session(session_id):
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({"error": "Endpoint not found"}), 404
+    return jsonify({"success": False, "data": None, "error": "Endpoint not found"}), 404
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({"error": "Internal server error"}), 500
+    return jsonify({"success": False, "data": None, "error": "Internal server error"}), 500
 
 @app.errorhandler(413)
 def request_entity_too_large(e):
-    return jsonify({"error": f"File exceeds maximum allowed size"}), 413
+    return jsonify({"success": False, "data": None, "error": "File exceeds 25MB limit"}), 413
 
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", 5000))

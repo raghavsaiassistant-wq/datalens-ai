@@ -103,8 +103,11 @@ class DataProfiler:
 
         num_stat_str = ""
         for col in numeric_cols:
-            stat = numeric_summary[col]
-            num_stat_str += f"{col}: min={stat.get('min')}, max={stat.get('max')}, mean={stat.get('mean')}, std={stat.get('std')}\n"
+            stat = numeric_summary.get(col)
+            if stat:
+                num_stat_str += f"{col}: min={stat.get('min')}, max={stat.get('max')}, mean={stat.get('mean')}, std={stat.get('std')}\n"
+            else:
+                num_stat_str += f"{col}: No statistical data available.\n"
 
         sample_str = json.dumps(sample[:3], indent=2, ensure_ascii=False)
 

@@ -161,6 +161,7 @@ class NIMClient:
     def chat(self, model_name: str, user_prompt: str, system_prompt: str = "You are a helpful AI assistant.", max_tokens: int = 2048, temperature: float = 0.3) -> str:
         """
         Executes a chat completion query, automatically using fallback models on failure.
+        Includes exponential backoff for rate limits.
         """
         attempt_list = [model_name] + FALLBACKS.get(model_name, [])
         messages = [
@@ -174,48 +175,41 @@ class NIMClient:
             except ValueError:
                 continue
 
-            start_time = time.time()
-            try:
-                response = client.chat.completions.create(
-                    model=model_id,
-                    messages=messages, # type: ignore
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-                latency = time.time() - start_time
-                usage = response.usage
-                total_tokens = usage.total_tokens if usage else 0
-                
-                logger.info(f"Success | Model: {current_model} | Latency: {latency:.2f}s | Tokens: {total_tokens}")
-                raw = response.choices[0].message.content if response.choices[0].message.content else ""
-                return self._strip_thinking(raw)
-                
-            except Exception as e:
-                error_msg = str(e)
-                if "429" in error_msg:
-                    logger.warning(f"Rate limit (429) on {current_model}. Retrying after 10s...")
-                    time.sleep(10)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
                     start_time = time.time()
-                    try:
-                        response = client.chat.completions.create(
-                            model=model_id,
-                            messages=messages, # type: ignore
-                            max_tokens=max_tokens,
-                            temperature=temperature
-                        )
-                        latency = time.time() - start_time
-                        usage = response.usage
-                        total_tokens = usage.total_tokens if usage else 0
+                    response = client.chat.completions.create(
+                        model=model_id,
+                        messages=messages, # type: ignore
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    latency = time.time() - start_time
+                    usage = response.usage
+                    total_tokens = usage.total_tokens if usage else 0
+                    
+                    logger.info(f"Success | Model: {current_model} | Latency: {latency:.2f}s | Tokens: {total_tokens}")
+                    
+                    if not response.choices:
+                        logger.warning(f"Empty choices in response from {current_model}")
+                        break # Try next model
                         
-                        logger.info(f"Success after retry | Model: {current_model} | Latency: {latency:.2f}s | Tokens: {total_tokens}")
-                        raw = response.choices[0].message.content if response.choices[0].message.content else ""
-                        return self._strip_thinking(raw)
-                    except Exception as retry_err:
-                        logger.error(f"Retry failed for {current_model}: {str(retry_err)[:100]}")
-                        logger.info(f"Falling back to next model from {current_model}...")
-                else:
-                    logger.error(f"Error on {current_model}: {error_msg[:100]}")
-                    logger.info(f"Falling back from {current_model}...")
+                    raw = response.choices[0].message.content if response.choices[0].message.content else ""
+                    return self._strip_thinking(raw)
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    is_rate_limit = "429" in error_msg
+                    
+                    if is_rate_limit and attempt < max_retries - 1:
+                        wait_time = (2 ** attempt) + 1 # 1s, 3s, 7s...
+                        logger.warning(f"Rate limit (429) on {current_model}. Retry {attempt+1}/{max_retries} in {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                    
+                    logger.error(f"Error on {current_model} (Attempt {attempt+1}): {error_msg[:100]}")
+                    break # Try next model in attempt_list
 
         raise RuntimeError(f"All models in attempt chain {attempt_list} failed for request.")
 

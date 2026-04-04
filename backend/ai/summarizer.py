@@ -126,7 +126,24 @@ Return ONLY valid JSON. No markdown fences. No explanation. No preamble.
             return {}
             
     def _validate_keys(self, result: dict):
-        required = ["executive_summary", "key_findings", "next_steps", "data_health_score"]
-        for r in required:
-            if r not in result:
-                result[r] = [] if r in ("key_findings", "next_steps") else "Missing data"
+        """Ensures the response has the required keys and types for the frontend."""
+        defaults = {
+            "executive_summary": "Analysis summary unavailable.",
+            "key_findings": [
+                {"headline": "Insight Pending", "detail": "Developing data perspectives...", "impact": "low"},
+                {"headline": "Insight Pending", "detail": "Synthesizing trends...", "impact": "low"},
+                {"headline": "Insight Pending", "detail": "Finalizing data patterns...", "impact": "low"}
+            ],
+            "next_steps": [
+                {"action": "Verify Data", "reason": "System error during next step generation", "priority": "short-term"},
+                {"action": "Review Dashboard", "reason": "Consult existing charts for patterns", "priority": "short-term"},
+                {"action": "Check Sources", "reason": "Ensure data integrity for future analysis", "priority": "short-term"}
+            ],
+            "data_health_score": 50
+        }
+        
+        for key, default in defaults.items():
+            if key not in result or not result[key]:
+                result[key] = default
+            elif key in ("key_findings", "next_steps") and not isinstance(result[key], list):
+                result[key] = default

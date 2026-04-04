@@ -3,14 +3,14 @@ import Plot from 'react-plotly.js';
 import { buildPlotlyLayout, buildPlotlyConfig, formatNumber } from '../utils/chartHelpers';
 
 const ChartRenderer = ({ config }) => {
-  const { chart_type, title, x_col, y_col, data } = config;
+  const { chart_type, title, data } = config;
   
   if (chart_type === 'kpi_card') {
     const val = data && data.length > 0 ? data[0].y : 0;
     return (
-      <div className="flex flex-col items-center justify-center p-6 h-full text-center">
-        <h3 className="text-secondary text-base mb-2">{title}</h3>
-        <p className="text-4xl font-bold text-white tracking-tight">{formatNumber(val)}</p>
+      <div className="flex flex-col items-center justify-center p-4 h-full text-center">
+        <h3 className="text-[#8E9AAF] text-[10px] font-mono uppercase tracking-widest mb-3 opacity-60">{title}</h3>
+        <p className="text-4xl font-mono font-bold text-white tracking-tighter drop-shadow-sm">{formatNumber(val)}</p>
       </div>
     );
   }
@@ -20,31 +20,40 @@ const ChartRenderer = ({ config }) => {
   
   const xData = data.map(d => d.x);
   const yData = data.map(d => d.y);
-  const color = '#76B900';
+  
+  // Nordic Dark Palette
+  const accent = '#76B900'; // NVIDIA Green
+  const accentBlue = '#00E5FF'; // Electric Cyan
+  const colors = [accent, accentBlue, '#FFFFFF', '#1E293B', '#475569'];
 
-  let trace = {};
+  let trace = {
+    marker: { color: accent, line: { color: 'rgba(255,255,255,0.05)', width: 0.5 } },
+    line: { color: accent, width: 3, shape: 'spline' }
+  };
 
   if (chart_type === 'line') {
-    trace = { x: xData, y: yData, type: 'scatter', mode: 'lines+markers', marker: { color }, line: { color } };
+    trace = { ...trace, x: xData, y: yData, type: 'scatter', mode: 'lines' };
   } else if (chart_type === 'bar') {
-    trace = { x: xData, y: yData, type: 'bar', marker: { color } };
+    trace = { ...trace, x: xData, y: yData, type: 'bar' };
   } else if (chart_type === 'scatter') {
-    trace = { x: xData, y: yData, type: 'scatter', mode: 'markers', marker: { color, size: 8 } };
+    trace = { ...trace, x: xData, y: yData, type: 'scatter', mode: 'markers', marker: { color: accentBlue, size: 10, opacity: 0.7 } };
   } else if (chart_type === 'pie') {
-    trace = { labels: xData, values: yData, type: 'pie', marker: { colors: [color, '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444'] }, hole: 0.4 };
+    trace = { labels: xData, values: yData, type: 'pie', marker: { colors }, hole: 0.6, textinfo: 'label+percent', textfont: { family: 'IBM Plex Mono', size: 10, color: '#fff' } };
   } else if (chart_type === 'histogram') {
-    trace = { x: xData, y: yData, type: 'bar', marker: { color } };
-  } else if (chart_type === 'heatmap') {
-    // Basic heatmap representation
-    const zData = data.map(d => d.value);
-    trace = { x: xData, y: yData, z: zData, type: 'heatmap', colorscale: 'Viridis' };
+    trace = { ...trace, x: xData, y: yData, type: 'bar' };
   }
 
   return (
-    <div className="w-full h-full min-h-[300px]">
+    <div className="w-full h-full min-h-[300px] animate-in fade-in duration-1000">
       <Plot
         data={[trace]}
-        layout={{ ...layout, autosize: true }}
+        layout={{ 
+          ...layout, 
+          autosize: true,
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+          font: { family: 'IBM Plex Mono', color: '#8E9AAF', size: 10 }
+        }}
         config={pltConfig}
         useResizeHandler={true}
         style={{ width: "100%", height: "100%" }}

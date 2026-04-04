@@ -1,65 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&family=Archivo:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --bg-primary: #0A0F1E;
-    --bg-card: rgba(255, 255, 255, 0.05);
+    --bg-primary: #0A0C10;
+    --bg-card: rgba(255, 255, 255, 0.03);
     --accent: #76B900;
-    --accent-blue: #3B82F6;
-    --text-primary: #FFFFFF;
-    --text-secondary: #94A3B8;
-    --border: rgba(255, 255, 255, 0.1);
-    --danger: #EF4444;
-    --warning: #F59E0B;
-    --success: #10B981;
+    --accent-blue: #00E5FF;
+    --text-primary: #F8FAFC;
+    --text-secondary: #8E9AAF;
+    --border: rgba(255, 255, 255, 0.08);
+    --danger: #FF3B3B;
+    --warning: #FFB800;
+    --success: #00F08F;
   }
+  
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Archivo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Instrument Serif', serif;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
   }
   
   /* Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--accent);
   }
 }
 
 @layer components {
   .glass-card {
     background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
   }
   
-  .gradient-border {
-    position: relative;
-    background-clip: padding-box;
-    border: 1px solid transparent;
+  .nordic-badge {
+    @apply px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-widest border border-current;
   }
-  
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
-    z-index: -1;
-    margin: -1px;
-    border-radius: inherit;
-    background: linear-gradient(to right, var(--accent), var(--accent-blue));
-  }
+
+  .animate-stagger-1 { animation-delay: 100ms; }
+  .animate-stagger-2 { animation-delay: 200ms; }
+  .animate-stagger-3 { animation-delay: 300ms; }
+  .animate-stagger-4 { animation-delay: 400ms; }
+}
+
+/* Custom Animations */
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.typewriter {
+  overflow: hidden;
+  white-space: pre-wrap;
+  display: inline-block;
 }

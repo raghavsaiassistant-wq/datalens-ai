@@ -7,6 +7,7 @@ Uses threading to parallelize Anomaly detection and Chart recommendation.
 import time
 import threading
 from typing import Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor
 from parsers.base_parser import DataProfile
 from ai.nim_client import NIMClient
 from ai.anomaly_detector import AnomalyDetector, AnomalyFlag
@@ -19,42 +20,55 @@ logger = logging.getLogger("FindingsGenerator")
 class FindingsGenerator:
     """Runs the AI pipeline."""
 
-    def generate(self, profile: DataProfile, nim_client: NIMClient) -> Dict[str, Any]:
-        """Runs the detection, charts and summarization pipeline and returns an AnalysisResult block."""
+    def generate(self, profile: DataProfile, nim_client: NIMClient, progress_callback: Any = None) -> Dict[str, Any]:
+        """Runs the detection, charts and summarization pipeline in parallel."""
         start_time = time.time()
         
-        detection_result: List[AnomalyFlag] = []
-        charts_result: List[ChartConfig] = []
-        
-        def run_anomalies():
-            try:
-                detector = AnomalyDetector()
-                res = detector.detect(profile, nim_client)
-                detection_result.extend(res)
-            except Exception as e:
-                logger.error(f"Anomaly detection failed: {e}")
-                
-        def run_charts():
-            try:
-                recommender = ChartRecommender()
-                res = recommender.recommend(profile)
-                charts_result.extend(res)
-            except Exception as e:
-                logger.error(f"Chart recommendation failed: {e}")
+        # 0. Sampling for Performance
+        original_rows = profile.rows
+        if original_rows > 500:
+            logger.info(f"Sampling dataset from {original_rows} to 500 rows for AI efficiency.")
+            profile.df = profile.df.sample(500, random_state=42) if original_rows > 500 else profile.df
+            profile.rows = 500
+            profile.warnings.append(f"AI insights generated from a sample of 500 rows (Total: {original_rows}).")
 
-        # 1 & 2. Run detector and recommender in parallel
-        t1 = threading.Thread(target=run_anomalies)
-        t2 = threading.Thread(target=run_charts)
-        t1.start(); t2.start()
-        t1.join(); t2.join()
-        
-        # 3. Summarizer
+        def update_progress(step: int, message: str):
+            if progress_callback:
+                progress_callback(step, message)
+
+        update_progress(1, "📂 File successfully read. Analyzing structure...")
+        update_progress(2, "🔍 Statistical profiling complete. Initiating AI agents...")
+
+        # 1. Prepare parallel tasks
+        detector = AnomalyDetector()
+        recommender = ChartRecommender()
         summarizer = Summarizer()
-        summary = summarizer.summarize(profile, detection_result, nim_client)
-        
+
+        update_progress(3, "🧠 Intelligent agents are processing your data...")
+
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            # We start all three in parallel. 
+            # Note: Summarizer will now work without explicit anomalies if they aren't ready,
+            # or we accept that it runs on the profile data primarily.
+            future_anomalies = executor.submit(detector.detect, profile, nim_client)
+            future_charts = executor.submit(recommender.recommend, profile)
+            # Parallelize summary + findings + next steps in ONE call or multiple?
+            # Keeping it in one call for coherence, but running it in parallel with others.
+            future_summary = executor.submit(summarizer.summarize, profile, [], nim_client)
+
+            # Join results
+            detection_result = future_anomalies.result()
+            update_progress(4, "📊 Dashboard visualization models ready.")
+            
+            charts_result = future_charts.result()
+            update_progress(5, "✨ AI Insight synthesis complete.")
+            
+            summary = future_summary.result()
+
         total_time = round(time.time() - start_time, 2)
         logger.info(f"AI Pipeline completed in {total_time}s")
-        
+        update_progress(6, "🎉 Analysis complete! Finalizing dashboard...")
+
         # 4. Result combination
         return {
             "profile": {

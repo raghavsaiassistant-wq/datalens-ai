@@ -1,0 +1,9 @@
+🚀 Initial commit — DataLens AI full stack
+
+- NVIDIA NIM multi-model AI pipeline (8 models)
+- File parsers: CSV, Excel, SQL, JSON, PDF, Image
+- AI layer: Anomaly detection, Chart recommender, Summarizer
+- Flask REST API with session management
+- React frontend with Plotly dashboards
+- Q&A panel for natural language data queries
+- Deployment config for Render + Vercel
