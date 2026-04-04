@@ -68,15 +68,15 @@ const FileUpload = ({ onUpload }) => {
       {/* ── Navigation ── */}
       <nav className="relative z-10 bg-white/90 backdrop-blur-md border-b border-black/[0.06] flex items-center justify-between px-8 md:px-16 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-[#4a7a00] flex items-center justify-center shadow-[0_2px_8px_rgba(118,185,0,0.3)]">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#CC4400] flex items-center justify-center shadow-[0_2px_8px_rgba(255,107,0,0.3)]">
             <span className="font-serif italic text-white text-lg font-bold leading-none">L</span>
           </div>
           <span className="font-serif italic text-[#1D1D1F] text-xl tracking-tight">
-            DataLens <span className="text-[#6E6E73]">AI</span>
+            DataLens <span className="text-[#3A3A3C]">AI</span>
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden md:flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-[#6E6E73]">
+          <span className="hidden md:flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-[#3A3A3C]">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             NVIDIA NIM Powered
           </span>
@@ -86,8 +86,8 @@ const FileUpload = ({ onUpload }) => {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F5F5F7] border border-black/[0.08] hover:border-[#0A66C2]/40 hover:bg-[#0A66C2]/[0.05] transition-all duration-300 group"
           >
-            <Linkedin size={12} className="text-[#6E6E73] group-hover:text-[#0A66C2] transition-colors" />
-            <span className="text-[10px] font-mono text-[#6E6E73] group-hover:text-[#0A66C2] transition-colors hidden sm:inline">
+            <Linkedin size={12} className="text-[#3A3A3C] group-hover:text-[#0A66C2] transition-colors" />
+            <span className="text-[10px] font-mono text-[#3A3A3C] group-hover:text-[#0A66C2] transition-colors hidden sm:inline">
               Raghav Modi
             </span>
           </a>
@@ -98,9 +98,9 @@ const FileUpload = ({ onUpload }) => {
       <div className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 md:px-12 py-16 max-w-5xl mx-auto w-full">
 
         {/* Badge */}
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/[0.08] border border-accent/[0.20] mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <Sparkles size={12} className="text-accent" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-accent font-bold">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF6B00]/[0.08] border border-[#FF6B00]/[0.20] mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <Sparkles size={12} style={{ color: '#FF6B00' }} />
+          <span className="text-[10px] font-mono uppercase tracking-[0.25em] font-bold" style={{ color: '#FF6B00' }}>
             AI Data Intelligence Platform
           </span>
         </div>
@@ -111,13 +111,13 @@ const FileUpload = ({ onUpload }) => {
           <br />
           <span
             className="text-transparent bg-clip-text"
-            style={{ backgroundImage: 'linear-gradient(135deg, #76B900 0%, #4a7a00 50%, #0071E3 100%)' }}
+            style={{ backgroundImage: 'linear-gradient(135deg, #FF6B00 0%, #CC4400 45%, #0071E3 100%)' }}
           >
             Executive Intelligence
           </span>
         </h1>
 
-        <p className="text-center text-[#6E6E73] text-base md:text-lg font-light max-w-xl mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 leading-relaxed">
+        <p className="text-center text-[#3A3A3C] text-base md:text-lg font-light max-w-xl mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 leading-relaxed">
           Upload any file. Get an interactive AI dashboard with executive summary, anomaly
           detection, and natural language Q&amp;A — in under 30 seconds.
         </p>
@@ -155,7 +155,7 @@ const FileUpload = ({ onUpload }) => {
                 ? <CheckCircle2 size={36} className="text-accent" />
                 : isDragOver
                   ? <Sparkles size={36} className="text-accent animate-pulse" />
-                  : <Upload size={36} className="text-[#8E8E93] group-hover:text-accent transition-colors" />
+                  : <Upload size={36} className="text-[#48484A] group-hover:text-accent transition-colors" />
               }
             </div>
 
@@ -165,20 +165,20 @@ const FileUpload = ({ onUpload }) => {
                   ✓ Ready for analysis
                 </p>
                 <p className="text-[#1D1D1F] text-lg font-medium mb-1 truncate max-w-[300px]">{selectedFile.name}</p>
-                <p className="text-[#8E8E93] text-xs font-mono">
+                <p className="text-[#48484A] text-xs font-mono">
                   {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
               </>
             ) : isDragOver ? (
               <>
                 <p className="text-accent text-xl font-serif italic mb-1">Drop to analyze</p>
-                <p className="text-[#6E6E73] text-sm font-mono">Release to start AI processing</p>
+                <p className="text-[#3A3A3C] text-sm font-mono">Release to start AI processing</p>
               </>
             ) : (
               <>
                 <p className="text-[#1D1D1F] text-xl font-serif italic mb-1.5">Drop your data file here</p>
-                <p className="text-[#8E8E93] text-sm font-mono mb-7">
-                  or <span className="text-accent underline underline-offset-2 cursor-pointer">browse files</span> · max 25 MB
+                <p className="text-[#48484A] text-sm font-mono mb-7">
+                  or <span className="underline underline-offset-2 cursor-pointer" style={{ color: '#FF6B00' }}>browse files</span> · max 25 MB
                 </p>
                 {/* Format pills */}
                 <div className="flex flex-wrap justify-center gap-2">
@@ -188,7 +188,7 @@ const FileUpload = ({ onUpload }) => {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F7] border border-black/[0.07] hover:border-black/[0.15] transition-colors"
                     >
                       <Icon size={11} style={{ color }} />
-                      <span className="text-[9px] font-mono font-bold text-[#6E6E73] uppercase tracking-widest">{ext}</span>
+                      <span className="text-[9px] font-mono font-bold text-[#3A3A3C] uppercase tracking-widest">{ext}</span>
                     </div>
                   ))}
                 </div>
@@ -215,7 +215,7 @@ const FileUpload = ({ onUpload }) => {
             animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250
             ${selectedFile
               ? 'bg-[#1D1D1F] text-white hover:bg-[#3A3A3C] hover:shadow-[0_8px_32px_rgba(0,0,0,0.20)] active:scale-[0.98] cursor-pointer'
-              : 'bg-[#E5E5EA] text-[#8E8E93] cursor-not-allowed'
+              : 'bg-[#E5E5EA] text-[#48484A] cursor-not-allowed'
             }
           `}
         >
@@ -232,7 +232,7 @@ const FileUpload = ({ onUpload }) => {
         </button>
 
         {/* Security note */}
-        <div className="mt-4 flex items-center gap-2 text-[10px] font-mono text-[#8E8E93] uppercase tracking-[0.2em] animate-in fade-in duration-700 delay-300">
+        <div className="mt-4 flex items-center gap-2 text-[10px] font-mono text-[#48484A] uppercase tracking-[0.2em] animate-in fade-in duration-700 delay-300">
           <FileType size={11} className="text-accent/60" />
           <span>Files deleted immediately after processing · No data stored</span>
         </div>
@@ -253,7 +253,7 @@ const FileUpload = ({ onUpload }) => {
               </div>
               <div>
                 <p className="text-[#1D1D1F] text-[11px] font-bold tracking-tight mb-0.5">{label}</p>
-                <p className="text-[#8E8E93] text-[10px] font-light leading-relaxed">{desc}</p>
+                <p className="text-[#48484A] text-[10px] font-light leading-relaxed">{desc}</p>
               </div>
             </div>
           ))}
@@ -262,7 +262,7 @@ const FileUpload = ({ onUpload }) => {
         {/* Model pills */}
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-10 animate-in fade-in duration-700 delay-500">
           {['Llama 3.3 70B', 'Kimi K2', 'MiniMax M2.5', 'Mistral 7B', 'Llama 3.1 8B', 'NV-EmbedQA', 'Qwen VL'].map((m, i) => (
-            <span key={m} className="text-[9px] font-mono text-[#8E8E93] uppercase tracking-[0.2em]">
+            <span key={m} className="text-[9px] font-mono text-[#48484A] uppercase tracking-[0.2em]">
               {m}{i < 6 ? <span className="ml-5 text-black/[0.10]">·</span> : null}
             </span>
           ))}
@@ -271,7 +271,7 @@ const FileUpload = ({ onUpload }) => {
 
       {/* ── Footer ── */}
       <footer className="relative z-10 bg-white border-t border-black/[0.06] px-8 md:px-16 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[#8E8E93] text-[10px] font-mono uppercase tracking-[0.2em]">
+        <div className="flex items-center gap-2 text-[#48484A] text-[10px] font-mono uppercase tracking-[0.2em]">
           <Globe size={10} />
           <span>DataLens AI · v1.0 · Built on NVIDIA NIM Free APIs · Zero paid AI costs</span>
         </div>
@@ -281,7 +281,7 @@ const FileUpload = ({ onUpload }) => {
           rel="noopener noreferrer"
           className="flex items-center gap-2 group/footer"
         >
-          <span className="text-[10px] font-mono text-[#8E8E93] uppercase tracking-[0.15em]">Created by</span>
+          <span className="text-[10px] font-mono text-[#48484A] uppercase tracking-[0.15em]">Created by</span>
           <span className="text-[10px] font-mono font-bold text-[#1D1D1F] group-hover/footer:text-accent uppercase tracking-[0.15em] transition-colors">
             Raghav Modi
           </span>
