@@ -1,21 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  FileText, 
-  Search, 
-  BrainCircuit, 
-  BarChart3, 
-  Sparkles, 
-  CheckCircle2,
-  Loader2
+import {
+  FileText, Search, BrainCircuit, BarChart3, Sparkles, CheckCircle2, Loader2
 } from 'lucide-react';
 
 const STEPS = [
-  { id: 1, label: "Reading your file...", icon: FileText },
-  { id: 2, label: "Profiling your data...", icon: Search },
-  { id: 3, label: "Sending to AI...", icon: BrainCircuit },
-  { id: 4, label: "Building your dashboard...", icon: BarChart3 },
-  { id: 5, label: "Finalizing insights...", icon: Sparkles },
-  { id: 6, label: "Your analysis is ready!", icon: CheckCircle2 }
+  { id: 1, label: 'Reading file', sub: 'Parsing & encoding detection', icon: FileText },
+  { id: 2, label: 'Profiling data', sub: 'Types, nulls & statistics', icon: Search },
+  { id: 3, label: 'AI processing', sub: 'Anomalies & chart selection', icon: BrainCircuit },
+  { id: 4, label: 'Building charts', sub: 'Dashboard visualizations', icon: BarChart3 },
+  { id: 5, label: 'Synthesizing', sub: 'Executive summary & findings', icon: Sparkles },
+  { id: 6, label: 'Complete', sub: 'Dashboard ready', icon: CheckCircle2 },
 ];
 
 const AnalysisProgress = ({ progress, message, startTime }) => {
@@ -23,88 +17,125 @@ const AnalysisProgress = ({ progress, message, startTime }) => {
 
   useEffect(() => {
     if (progress >= 6 || !startTime) return;
-    const timer = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    return () => clearInterval(t);
   }, [progress, startTime]);
 
+  const pct = Math.round((progress / 6) * 100);
+
   return (
-    <div className="fixed inset-0 bg-[#0A0C10] z-50 flex items-center justify-center p-6 overflow-hidden font-sans">
-      {/* Background Cinematic Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-blue/10 rounded-full blur-[120px] animate-pulse delay-700"></div>
-        <div className="grid grid-cols-8 gap-4 opacity-[0.03] rotate-12 scale-150">
-          {Array.from({ length: 64 }).map((_, i) => (
-            <div key={i} className="h-20 w-20 border border-white rounded-lg"></div>
-          ))}
-        </div>
+    <div className="fixed inset-0 bg-[#060810] z-50 flex items-center justify-center p-6 overflow-hidden">
+
+      {/* Ambient glows */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-15%] left-[-10%] w-[55%] h-[55%] bg-accent/[0.07] rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] bg-accent-blue/[0.06] rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '1s' }} />
+        {/* Grid */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+          }}
+        />
       </div>
 
-      <div className="max-w-2xl w-full relative z-10">
-        <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h2 className="text-4xl font-serif text-white mb-3 italic tracking-tight">
-            Synthesizing <span className="text-accent italic">Intelligence</span>
+      <div className="max-w-xl w-full relative z-10">
+
+        {/* Title */}
+        <div className="text-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-[#4a7a00] flex items-center justify-center shadow-[0_0_16px_rgba(118,185,0,0.4)]">
+              <span className="font-serif italic text-white text-base font-bold leading-none">L</span>
+            </div>
+            <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-white/30">DataLens AI</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-serif italic text-white tracking-tight mb-3">
+            Synthesizing <span className="text-accent">Intelligence</span>
           </h2>
-          <p className="text-[#8E9AAF] font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-2">
-            {progress < 6 ? <Loader2 size={14} className="animate-spin" /> : null}
-            {message || "Processing data patterns..."}
-          </p>
+          <div className="flex items-center justify-center gap-2 text-white/35 font-mono text-xs uppercase tracking-widest">
+            {progress < 6 && <Loader2 size={12} className="animate-spin text-accent" />}
+            <span>{message || 'Processing data patterns…'}</span>
+          </div>
         </div>
 
-        {/* Progress Bar Container */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-          {/* Main Bar */}
-          <div className="h-2 w-full bg-white/5 rounded-full mb-12 overflow-hidden relative">
-            <div 
-              className="h-full bg-gradient-to-r from-accent via-accent-blue to-accent rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(118,185,0,0.4)]"
-              style={{ width: `${(progress / 6) * 100}%` }}
-            ></div>
+        {/* Card */}
+        <div className="bg-white/[0.025] border border-white/[0.07] rounded-3xl p-7 backdrop-blur-xl shadow-2xl">
+
+          {/* Progress bar */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2.5">
+              <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Progress</span>
+              <span className="text-[10px] font-mono text-accent font-bold">{pct}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/[0.05] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_12px_rgba(118,185,0,0.5)]"
+                style={{
+                  width: `${pct}%`,
+                  background: 'linear-gradient(90deg, #76B900, #a0d400, #00E5FF)',
+                }}
+              />
+            </div>
           </div>
 
-          {/* Steps Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-4">
+          {/* Steps */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {STEPS.map((step) => {
               const Icon = step.icon;
-              const isCompleted = progress > step.id;
-              const isActive = progress === step.id;
-              const isPending = progress < step.id;
+              const done = progress > step.id;
+              const active = progress === step.id;
+              const pending = progress < step.id;
 
               return (
-                <div 
-                  key={step.id} 
-                  className={`flex flex-col items-center gap-3 transition-all duration-500 ${
-                    isActive ? "scale-110 opacity-100" : isCompleted ? "opacity-100" : "opacity-30"
+                <div
+                  key={step.id}
+                  className={`flex flex-col items-center gap-2.5 p-3.5 rounded-2xl transition-all duration-500 ${
+                    active
+                      ? 'bg-accent/[0.08] border border-accent/25 scale-105'
+                      : done
+                        ? 'bg-white/[0.02] border border-white/[0.05]'
+                        : 'opacity-25'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
-                    isCompleted ? "bg-accent/10 border-accent shadow-[0_0_15px_rgba(118,185,0,0.2)]" :
-                    isActive ? "bg-white/5 border-white/40 animate-pulse" :
-                    "bg-transparent border-white/10"
-                  }`}>
-                    {isCompleted ? (
-                      <CheckCircle2 size={24} className="text-accent" />
-                    ) : (
-                      <Icon size={24} className={isActive ? "text-white" : "text-white/40"} />
-                    )}
+                  <div className={`
+                    w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500
+                    ${done ? 'bg-accent/15 border border-accent/30 shadow-[0_0_12px_rgba(118,185,0,0.15)]'
+                      : active ? 'bg-white/[0.06] border border-white/20 animate-pulse'
+                      : 'bg-transparent border border-white/10'}
+                  `}>
+                    {done
+                      ? <CheckCircle2 size={20} className="text-accent" />
+                      : active
+                        ? <Icon size={20} className="text-white" />
+                        : <Icon size={20} className="text-white/30" />
+                    }
                   </div>
-                  <span className={`text-[11px] font-mono uppercase tracking-tighter text-center max-w-[100px] leading-tight ${
-                    isActive ? "text-white font-bold" : "text-white/40"
-                  }`}>
-                    {step.label}
-                  </span>
+                  <div className="text-center">
+                    <p className={`text-[10px] font-mono font-bold uppercase tracking-tighter ${active ? 'text-white' : done ? 'text-white/60' : 'text-white/25'}`}>
+                      {step.label}
+                    </p>
+                    <p className={`text-[9px] font-mono leading-tight mt-0.5 ${active ? 'text-accent/70' : 'text-white/20'}`}>
+                      {step.sub}
+                    </p>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
+        {/* Elapsed */}
         {progress < 6 && (
-          <p className="text-center mt-8 text-[#8E9AAF] font-mono text-[10px] uppercase tracking-widest animate-pulse">
-            Elapsed: {elapsed}s — AI models processing...
+          <p className="text-center mt-6 text-white/20 font-mono text-[10px] uppercase tracking-widest animate-pulse">
+            {elapsed}s elapsed · NVIDIA NIM AI processing
           </p>
         )}
+
+        {/* Creator attribution */}
+        <p className="text-center mt-4 text-white/10 font-mono text-[9px] uppercase tracking-[0.3em]">
+          Created by Raghav Modi · DataLens AI
+        </p>
       </div>
     </div>
   );

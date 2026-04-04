@@ -18,6 +18,14 @@ module.exports = {
           blue: "#00E5FF"
         }
       },
+      transitionDuration: {
+        '400': '400ms',
+        '1200': '1200ms',
+      },
+      transitionDelay: {
+        '250': '250ms',
+        '350': '350ms',
+      },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
       },
