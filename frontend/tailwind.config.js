@@ -6,16 +6,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#0A0C10",
-        card: "rgba(255,255,255,0.03)",
-        border: "rgba(255,255,255,0.08)",
-        secondary: "#8E9AAF",
-        danger: "#FF3B3B",
-        warning: "#FFB800",
-        success: "#00F08F",
+        canvas: "#F5F5F7",
+        card: "#FFFFFF",
+        'space-gray': "#3A3A3C",
+        secondary: "#6E6E73",
+        tertiary: "#8E8E93",
+        border: "rgba(0,0,0,0.08)",
+        danger: "#FF3B30",
+        warning: "#FF9500",
+        success: "#34C759",
         accent: {
           DEFAULT: "#76B900",
-          blue: "#00E5FF"
+          blue: "#0071E3"
         }
       },
       transitionDuration: {

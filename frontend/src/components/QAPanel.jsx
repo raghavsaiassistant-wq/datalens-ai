@@ -51,22 +51,22 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
         isOpen ? 'h-[580px]' : 'h-14'
       }`}
     >
-      <div className="h-full flex flex-col rounded-t-3xl md:rounded-t-2xl border border-white/[0.08] border-b-0 overflow-hidden bg-[#060810]/95 backdrop-blur-2xl shadow-[0_-20px_80px_rgba(0,0,0,0.5)]">
+      <div className="h-full flex flex-col rounded-t-3xl md:rounded-t-2xl border border-black/[0.10] border-b-0 overflow-hidden bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.10)]">
 
         {/* ── Header bar ── */}
         <div
           className={`flex items-center justify-between px-5 py-3.5 cursor-pointer select-none transition-colors border-b ${
-            isOpen ? 'border-white/[0.06]' : 'border-transparent'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/[0.02]'}`}
+            isOpen ? 'border-black/[0.07]' : 'border-transparent'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#F5F5F7]'}`}
           onClick={() => !disabled && setIsOpen(o => !o)}
         >
           <div className="flex items-center gap-3">
-            <div className={`p-1.5 rounded-lg transition-colors ${isOpen ? 'bg-accent/10' : 'bg-white/[0.04]'}`}>
-              <Terminal size={15} className={isOpen ? 'text-accent' : 'text-white/35'} />
+            <div className={`p-1.5 rounded-lg transition-colors ${isOpen ? 'bg-accent/10' : 'bg-[#F5F5F7]'}`}>
+              <Terminal size={15} className={isOpen ? 'text-accent' : 'text-[#8E8E93]'} />
             </div>
             <div>
-              <span className="font-serif italic text-white text-base">
-                Neural <span className="text-white/30">Interface</span>
+              <span className="font-serif italic text-[#1D1D1F] text-base">
+                Neural <span className="text-[#8E8E93]">Interface</span>
               </span>
               {!isOpen && (
                 <span className="text-[9px] font-mono text-accent uppercase tracking-widest ml-2 animate-pulse">
@@ -79,13 +79,13 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
             {isOpen && messages.length > 0 && (
               <button
                 onClick={(e) => { e.stopPropagation(); setMessages([]); }}
-                className="text-white/15 hover:text-white/50 transition-colors p-1 rounded"
+                className="text-[#8E8E93] hover:text-[#1D1D1F] transition-colors p-1 rounded"
                 title="Clear chat"
               >
                 <X size={12} />
               </button>
             )}
-            <button className="text-white/20 hover:text-white/60 transition-colors">
+            <button className="text-[#8E8E93] hover:text-[#1D1D1F] transition-colors">
               {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
             </button>
           </div>
@@ -93,28 +93,28 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
 
         {/* ── Chat body ── */}
         {isOpen && (
-          <div className="flex-grow flex flex-col overflow-hidden">
-            <div className="flex-grow overflow-y-auto px-5 py-4 flex flex-col gap-4 custom-scrollbar">
+          <div className="flex-grow flex flex-col overflow-hidden bg-white">
+            <div className="flex-grow overflow-y-auto px-5 py-4 flex flex-col gap-4 custom-scrollbar bg-[#F5F5F7]">
 
               {messages.length === 0 ? (
                 /* Welcome state */
                 <div className="h-full flex flex-col items-center justify-center text-center py-8 animate-in fade-in zoom-in-95 duration-500">
                   <div className="relative mb-5">
-                    <div className="w-14 h-14 bg-accent/[0.06] rounded-2xl flex items-center justify-center border border-accent/[0.12]">
-                      <Cpu size={26} className="text-accent/60" />
+                    <div className="w-14 h-14 bg-accent/[0.08] rounded-2xl flex items-center justify-center border border-accent/[0.18]">
+                      <Cpu size={26} className="text-accent/70" />
                     </div>
                     <div className="absolute inset-0 bg-accent/10 rounded-2xl blur-xl" />
                   </div>
-                  <p className="text-white/60 font-serif italic mb-1">Ask anything about your data</p>
-                  <p className="text-white/25 text-xs font-mono mb-6">Powered by Llama 3.1 8B via NVIDIA NIM</p>
+                  <p className="text-[#1D1D1F] font-serif italic mb-1">Ask anything about your data</p>
+                  <p className="text-[#8E8E93] text-xs font-mono mb-6">Powered by Llama 3.1 8B via NVIDIA NIM</p>
                   <div className="flex flex-col gap-2 w-full">
                     {SUGGESTIONS.map((s, i) => (
                       <button
                         key={i}
                         onClick={() => send(s)}
-                        className="text-left px-4 py-2.5 bg-white/[0.02] border border-white/[0.06] rounded-xl hover:border-accent/30 hover:bg-accent/[0.04] transition-all text-[11px] font-mono text-white/35 hover:text-white/70 group"
+                        className="text-left px-4 py-2.5 bg-white border border-black/[0.07] rounded-xl hover:border-accent/30 hover:bg-accent/[0.03] transition-all text-[11px] font-mono text-[#6E6E73] hover:text-[#1D1D1F] group shadow-sm"
                       >
-                        <span className="text-accent/30 group-hover:text-accent mr-2">/</span>
+                        <span className="text-accent/50 group-hover:text-accent mr-2">/</span>
                         {s}
                       </button>
                     ))}
@@ -127,19 +127,19 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
                       <div
                         className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm ${
                           msg.role === 'user'
-                            ? 'bg-accent text-[#060810] font-medium rounded-tr-sm shadow-[0_4px_20px_rgba(118,185,0,0.12)]'
+                            ? 'bg-[#1D1D1F] text-white font-medium rounded-tr-sm shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
                             : msg.error
-                              ? 'bg-red-500/[0.08] border border-red-500/20 text-red-300 rounded-tl-sm font-mono text-xs'
-                              : 'bg-white/[0.03] border border-white/[0.07] text-white/85 rounded-tl-sm'
+                              ? 'bg-red-50 border border-red-200 text-red-600 rounded-tl-sm font-mono text-xs'
+                              : 'bg-white border border-black/[0.08] text-[#1D1D1F] rounded-tl-sm shadow-sm'
                         }`}
                       >
                         {msg.role === 'ai' && !msg.error && (
-                          <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-white/[0.06]">
-                            <Sparkles size={11} className="text-accent/60" />
-                            <span className="text-[9px] font-mono text-accent/50 uppercase tracking-widest">AI Analysis</span>
+                          <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-black/[0.07]">
+                            <Sparkles size={11} className="text-accent/70" />
+                            <span className="text-[9px] font-mono text-accent uppercase tracking-widest">AI Analysis</span>
                           </div>
                         )}
-                        <p className={`leading-relaxed whitespace-pre-wrap text-[13px] ${msg.role === 'ai' && !msg.error ? 'font-serif italic' : ''}`}>
+                        <p className={`leading-relaxed whitespace-pre-wrap text-[13px] ${msg.role === 'ai' && !msg.error ? 'font-serif italic text-[#1D1D1F]' : ''}`}>
                           {msg.content}
                         </p>
                       </div>
@@ -148,13 +148,13 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
 
                   {isTyping && (
                     <div className="flex justify-start">
-                      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
-                        <Cpu size={13} className="text-accent/60 animate-spin-slow" />
+                      <div className="bg-white border border-black/[0.08] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3 shadow-sm">
+                        <Cpu size={13} className="text-accent/70 animate-spin-slow" />
                         <div className="flex gap-1">
                           {[0, 150, 300].map(d => (
                             <span
                               key={d}
-                              className="w-1.5 h-1.5 rounded-full bg-accent/35 animate-bounce"
+                              className="w-1.5 h-1.5 rounded-full bg-accent/40 animate-bounce"
                               style={{ animationDelay: `${d}ms` }}
                             />
                           ))}
@@ -168,7 +168,7 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
             </div>
 
             {/* ── Input ── */}
-            <div className="px-4 pb-4 pt-3 border-t border-white/[0.05]">
+            <div className="px-4 pb-4 pt-3 border-t border-black/[0.07] bg-white">
               <form onSubmit={handleSubmit} className="relative">
                 <input
                   ref={inputRef}
@@ -177,12 +177,12 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Ask about your data…"
                   disabled={isTyping || disabled}
-                  className="w-full bg-white/[0.02] border border-white/[0.08] focus:border-accent/30 rounded-xl py-3 pl-4 pr-12 text-sm text-white placeholder-white/20 focus:outline-none focus:bg-accent/[0.03] transition-all font-mono disabled:opacity-40"
+                  className="w-full bg-[#F5F5F7] border border-black/[0.08] focus:border-accent/40 rounded-xl py-3 pl-4 pr-12 text-sm text-[#1D1D1F] placeholder-[#8E8E93] focus:outline-none focus:bg-white transition-all font-mono disabled:opacity-40"
                 />
                 <button
                   type="submit"
                   disabled={!query.trim() || isTyping || disabled}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-accent text-[#060810] active:scale-95 disabled:opacity-0 disabled:pointer-events-none transition-all shadow-lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-[#1D1D1F] text-white active:scale-95 disabled:opacity-0 disabled:pointer-events-none transition-all shadow"
                 >
                   <Send size={14} />
                 </button>

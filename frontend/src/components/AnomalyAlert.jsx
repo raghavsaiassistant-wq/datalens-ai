@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { AlertTriangle, X, Zap } from 'lucide-react';
 
 const SEVERITY = {
-  high:     { color: '#FF3B3B', bg: 'rgba(255,59,59,0.07)',   border: 'rgba(255,59,59,0.25)',   dot: '#FF3B3B' },
-  critical: { color: '#FF3B3B', bg: 'rgba(255,59,59,0.07)',   border: 'rgba(255,59,59,0.25)',   dot: '#FF3B3B' },
-  medium:   { color: '#FFB800', bg: 'rgba(255,184,0,0.07)',   border: 'rgba(255,184,0,0.22)',   dot: '#FFB800' },
-  low:      { color: '#00E5FF', bg: 'rgba(0,229,255,0.06)',   border: 'rgba(0,229,255,0.20)',   dot: '#00E5FF' },
+  high:     { color: '#FF3B30', bg: 'rgba(255,59,48,0.06)',  border: 'rgba(255,59,48,0.20)' },
+  critical: { color: '#FF3B30', bg: 'rgba(255,59,48,0.06)',  border: 'rgba(255,59,48,0.20)' },
+  medium:   { color: '#FF9500', bg: 'rgba(255,149,0,0.06)',  border: 'rgba(255,149,0,0.18)' },
+  low:      { color: '#0071E3', bg: 'rgba(0,113,227,0.05)',  border: 'rgba(0,113,227,0.16)' },
 };
 
 const getSev = (s) => SEVERITY[s?.toLowerCase()] || SEVERITY.low;
@@ -29,21 +29,21 @@ const AnomalyAlert = ({ anomalies }) => {
       {/* Section header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-danger/[0.08] border border-danger/20 flex items-center justify-center shadow-[0_0_16px_rgba(255,59,59,0.08)]">
+          <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center shadow-[0_2px_8px_rgba(255,59,48,0.08)]">
             <AlertTriangle size={18} className="text-danger" />
           </div>
           <div>
             <span className="text-[10px] font-mono uppercase tracking-[0.28em] text-danger font-bold block mb-0.5">
               System Warning
             </span>
-            <h2 className="text-xl font-serif italic text-white">
-              Data <span className="text-white/35">Anomalies</span>
+            <h2 className="text-xl font-serif italic text-[#1D1D1F]">
+              Data <span className="text-[#8E8E93]">Anomalies</span>
             </h2>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-xl">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-black/[0.08] rounded-xl shadow-sm">
           <Zap size={12} className="text-warning" />
-          <span className="text-[10px] font-mono text-white/50">
+          <span className="text-[10px] font-mono text-[#6E6E73]">
             {flags.length} issue{flags.length !== 1 ? 's' : ''}
             {highCount > 0 && <span className="ml-1 text-danger">· {highCount} high</span>}
           </span>
@@ -57,9 +57,8 @@ const AnomalyAlert = ({ anomalies }) => {
           return (
             <div
               key={i}
-              className="relative rounded-2xl p-5 transition-all duration-400 hover:scale-[1.01] animate-in fade-in zoom-in-95 fill-mode-both group/card"
+              className="relative rounded-2xl p-5 transition-all duration-400 hover:shadow-[0_4px_20px_rgba(0,0,0,0.10)] animate-in fade-in zoom-in-95 fill-mode-both group/card bg-white"
               style={{
-                background: sev.bg,
                 border: `1px solid ${sev.border}`,
                 animationDelay: `${i * 60}ms`,
               }}
@@ -73,24 +72,24 @@ const AnomalyAlert = ({ anomalies }) => {
               {/* Dismiss */}
               <button
                 onClick={() => dismiss(i)}
-                className="absolute top-3 right-3 text-white/15 hover:text-white/60 transition-colors p-1 rounded-lg hover:bg-white/5"
+                className="absolute top-3 right-3 text-[#8E8E93] hover:text-[#1D1D1F] transition-colors p-1 rounded-lg hover:bg-[#F5F5F7]"
               >
                 <X size={12} />
               </button>
 
               {/* Tags */}
               <div className="flex flex-wrap gap-1.5 mb-3 pl-2">
-                <span className="px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/[0.08] text-[9px] font-mono font-bold text-white/60 uppercase tracking-widest">
+                <span className="px-2 py-0.5 rounded-md bg-[#F5F5F7] border border-black/[0.08] text-[9px] font-mono font-bold text-[#3A3A3C] uppercase tracking-widest">
                   {flag.column}
                 </span>
                 <span
                   className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase tracking-widest"
-                  style={{ color: sev.color, background: `${sev.color}12`, border: `1px solid ${sev.color}22` }}
+                  style={{ color: sev.color, background: sev.bg, border: `1px solid ${sev.color}20` }}
                 >
                   {(flag.anomaly_type || '').replaceAll('_', ' ')}
                 </span>
                 {flag.value != null && (
-                  <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-[9px] font-mono text-white/35">
+                  <span className="px-2 py-0.5 rounded-md bg-[#F5F5F7] border border-black/[0.07] text-[9px] font-mono text-[#6E6E73]">
                     {typeof flag.value === 'number'
                       ? flag.value.toLocaleString(undefined, { maximumFractionDigits: 2 })
                       : String(flag.value)}
@@ -99,7 +98,7 @@ const AnomalyAlert = ({ anomalies }) => {
               </div>
 
               {/* Explanation */}
-              <p className="text-white/50 text-xs leading-relaxed font-serif italic pl-2">
+              <p className="text-[#6E6E73] text-xs leading-relaxed font-serif italic pl-2">
                 {flag.explanation || 'Anomaly detected in this column.'}
               </p>
             </div>
