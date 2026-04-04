@@ -5,39 +5,27 @@ import { UploadCloud, FileType, CheckCircle2, Binary, Database, Table, FileJson,
 const FileUpload = ({ onUpload }) => {
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const onDrop = useCallback(acceptedFiles => {
+  const SUPPORTED_EXTS = ['.csv','.txt','.xls','.xlsx','.sql','.json','.pdf','.png','.jpg','.jpeg','.webp'];
+
+  const getExt = (filename) => '.' + filename.split('.').pop().toLowerCase();
+
+  const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    // Check acceptedFiles first
     if (acceptedFiles && acceptedFiles.length > 0) {
-      setSelectedFile(acceptedFiles[0]);
+      const valid = acceptedFiles.find(f => SUPPORTED_EXTS.includes(getExt(f.name)));
+      if (valid) { setSelectedFile(valid); return; }
+    }
+    // Fall back to rejectedFiles — react-dropzone may reject valid files due to MIME mismatch on Windows
+    if (rejectedFiles && rejectedFiles.length > 0) {
+      const valid = rejectedFiles.map(r => r.file).find(f => SUPPORTED_EXTS.includes(getExt(f.name)));
+      if (valid) setSelectedFile(valid);
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
-    accept: {
-      'text/csv': ['.csv'],
-      'text/plain': ['.csv', '.txt'],      // Windows sends CSV as text/plain
-      'application/octet-stream': ['.csv', '.xls', '.xlsx', '.sql'], // generic binary fallback
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/sql': ['.sql'],
-      'text/x-sql': ['.sql'],
-      'application/json': ['.json'],
-      'text/json': ['.json'],
-      'application/pdf': ['.pdf'],
-      'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/webp': ['.webp']
-    },
     maxSize: 25 * 1024 * 1024, // 25MB
-    validator: (file) => {
-      const ext = '.' + file.name.split('.').pop().toLowerCase();
-      const supported = ['.csv','.txt','.xls','.xlsx','.sql','.json','.pdf','.png','.jpg','.jpeg','.webp'];
-      if (!supported.includes(ext)) {
-        return { code: 'unsupported-type', message: `File type ${ext} is not supported.` };
-      }
-      return null;
-    }
   });
 
   const handleAnalyze = () => {
