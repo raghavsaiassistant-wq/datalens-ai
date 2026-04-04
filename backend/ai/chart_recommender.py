@@ -84,7 +84,7 @@ class ChartRecommender:
         # RULE 3: Bar chart — sort by value descending, show top 20 categories
         if best_cat and kpis:
             k = kpis[0]
-            grouped = df.groupby(best_cat, as_index=False)[k].sum()
+            grouped = df.groupby(best_cat, as_index=False)[k].sum().dropna(subset=[k])
             grouped = grouped.sort_values(k, ascending=False).head(20)
             data_records = [{"x": str(row[best_cat]), "y": float(row[k])} for _, row in grouped.iterrows()]
             
@@ -137,9 +137,13 @@ class ChartRecommender:
 
         # RULE 6: Histogram
         if num_cols:
-            var_col = df[num_cols].var().idxmax()
+            variances = df[num_cols].var().dropna()
+            if not variances.empty:
+                var_col = variances.idxmax()
+            else:
+                var_col = num_cols[0]
             sub = df[var_col].dropna()
-            if not sub.empty:
+            if not sub.empty and sub.std() > 0:
                 counts, bins = np.histogram(sub, bins=20)
                 data_records = [{"x": float((bins[i]+bins[i+1])/2), "y": int(c)} for i, c in enumerate(counts)]
                 charts.append(ChartConfig(

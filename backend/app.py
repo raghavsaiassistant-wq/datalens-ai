@@ -42,14 +42,25 @@ def cleanup_old_jobs():
                    and now - j.get("created_at", now) > JOB_TTL_SECONDS]
         for jid in expired:
             del JOBS[jid]
+import re as _re
 CORS(app, origins=[
     "http://localhost:5173",
     "http://localhost:3000",
     "https://datalens-ai.vercel.app",
-    "https://*.vercel.app",
-    "https://datalens-ai.onrender.com",
     "https://datalensai.vercel.app",
-])
+    "https://datalens-ai.onrender.com",
+], supports_credentials=False)
+
+# Also allow all Vercel preview deployments via regex
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin", "")
+    if _re.match(r"https://[a-zA-Z0-9\-]+-[a-zA-Z0-9\-]+-.*\.vercel\.app$", origin) or \
+       _re.match(r"https://datalensai.*\.vercel\.app$", origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 # Config
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", 25)) * 1024 * 1024
@@ -63,6 +74,7 @@ generator = FindingsGenerator()
 router = FileRouter()
 session_store = SessionStore()
 
+@app.route("/health", methods=["GET"])
 @app.route("/api/health", methods=["GET"])
 def health():
     # Fast check: just see if we have at least one client loaded

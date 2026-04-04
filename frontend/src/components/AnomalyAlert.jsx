@@ -60,11 +60,18 @@ const AnomalyAlert = ({ anomalies }) => {
                     {flag.column}
                   </div>
                   <div className={`px-2 py-1 rounded ${bg} border border-white/5 text-[9px] font-mono font-bold uppercase tracking-widest`} style={{ color }}>
-                    {flag.anomaly_type.replaceAll('_', ' ')}
+                    {(flag.anomaly_type || '').replaceAll('_', ' ')}
                   </div>
+                  {flag.value != null && (
+                    <div className="px-2 py-1 rounded bg-white/5 border border-white/5 text-[9px] font-mono text-white/40">
+                      {typeof flag.value === 'number'
+                        ? flag.value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        : String(flag.value)}
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm text-[#8E9AAF] leading-relaxed font-serif italic border-l border-white/5 pl-3">
-                  {flag.explanation}
+                  {flag.explanation || 'Anomaly detected in this column.'}
                 </p>
                 <div className="mt-4 flex items-center gap-2 opacity-0 group-hover/alert:opacity-100 transition-opacity">
                   <ShieldAlert size={12} className="text-white/20" />
