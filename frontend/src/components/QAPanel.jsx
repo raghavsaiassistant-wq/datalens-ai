@@ -46,7 +46,7 @@ const QAPanel = ({ onAskQuestion, disabled }) => {
 
   return (
     <div className={`fixed bottom-0 right-0 md:right-8 w-full md:w-[480px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-50 ${isOpen ? 'h-[600px]' : 'h-16'}`}>
-      <div className="glass-card shadow-[0_20px_80px_rgba(0,0,0,0.4)] h-full flex flex-col rounded-t-3xl md:rounded-b-none border-b-0 overflow-hidden bg-[#0A0C10]/95 backdrop-blur-2xl">
+      <div className="glass-card shadow-[0_20px_80px_rgba(0,0,0,0.4)] h-full flex flex-col rounded-t-3xl md:rounded-b-none border-b-0 overflow-hidden bg-[#0A0C10] backdrop-blur-2xl">
         
         {/* Header Bar */}
         <div 

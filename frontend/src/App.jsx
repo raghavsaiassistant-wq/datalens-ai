@@ -14,7 +14,7 @@ function App() {
   const { uploadFile, askQuestion, resetAnalysis, analysisResult, isLoading, loadingStep, progress, error, uploadStartTime } = useAnalysis();
 
   return (
-    <div className="min-h-screen bg-[#0A0C10] selection:bg-accent/30 selection:text-white font-sans text-white overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#0A0C10] selection:bg-accent/30 selection:text-white text-white overflow-x-hidden relative">
       
       {/* Cinematic Background Glows */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">

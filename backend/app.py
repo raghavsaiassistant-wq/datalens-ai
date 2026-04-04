@@ -74,6 +74,10 @@ generator = FindingsGenerator()
 router = FileRouter()
 session_store = SessionStore()
 
+@app.route("/", methods=["GET", "HEAD"])
+def root():
+    return jsonify({"status": "ok"}), 200
+
 @app.route("/health", methods=["GET"])
 @app.route("/api/health", methods=["GET"])
 def health():
