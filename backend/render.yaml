@@ -1,14 +1,11 @@
 services:
   - type: web
     name: datalens-ai-backend
-    env: python
-    rootDir: backend
+    runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    startCommand: gunicorn app:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
       - key: FLASK_ENV
         value: production
-      - key: NVIDIA_BASE_URL
-        value: https://integrate.api.nvidia.com/v1
-      - key: MAX_FILE_SIZE_MB
-        value: 25

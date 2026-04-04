@@ -4,13 +4,13 @@ app.py
 Flask REST API serving DataLens AI frontend.
 Routes files to FileRouter, processes through FindingsGenerator, and supports Q&A.
 """
+import time
 import os
 import uuid
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-
 import threading
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -51,13 +51,13 @@ session_store = SessionStore()
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    nim_status = nim_client.health_check()
-    is_healthy = all("ok" in s for s in nim_status.values() if s != "no_key")
+    # Fast check: just see if we have at least one client loaded
+    has_keys = len(nim_client._clients) > 0
     return jsonify({
         "success": True,
         "data": {
-            "status": "healthy" if is_healthy else "degraded",
-            "nim": nim_status,
+            "status": "healthy" if has_keys else "degraded",
+            "clients_loaded": len(nim_client._clients),
             "version": "1.0.0"
         },
         "error": None
@@ -234,6 +234,6 @@ def request_entity_too_large(e):
     return jsonify({"success": False, "data": None, "error": "File exceeds 25MB limit"}), 413
 
 if __name__ == "__main__":
-    port = int(os.getenv("FLASK_PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))
     debug = os.getenv("FLASK_ENV") == "development"
     app.run(host="0.0.0.0", port=port, debug=debug)
