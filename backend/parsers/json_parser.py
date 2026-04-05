@@ -16,9 +16,20 @@ class JSONParser(BaseParser):
         
         self._validate_file(file_path, ['.json'])
         encoding = self._detect_encoding(file_path)
-        
-        with open(file_path, 'r', encoding=encoding) as f:
-            data = json.load(f)
+
+        # Try detected encoding first, fall back through common encodings on UnicodeDecodeError
+        data = None
+        for enc in [encoding, 'utf-8', 'utf-8-sig', 'latin-1']:
+            try:
+                with open(file_path, 'r', encoding=enc, errors='replace') as f:
+                    data = json.load(f)
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+            except json.JSONDecodeError:
+                break  # Readable but malformed — no point retrying with another encoding
+        if data is None:
+            raise ValueError("Could not decode JSON file. Ensure the file is valid UTF-8 JSON.")
             
         df = None
         

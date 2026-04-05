@@ -48,36 +48,53 @@ class SQLParser(BaseParser):
         columns = set()
         
         # STRATEGY A & B
-        try:
-            if safe_statements:
-                conn = sqlite3.connect(":memory:")
+        if safe_statements:
+            conn = sqlite3.connect(":memory:")
+            try:
                 cur = conn.cursor()
-                
-                for c in creates: cur.execute(c)
-                for i in inserts: cur.execute(i)
+
+                # Execute each CREATE individually so MySQL-specific syntax doesn't abort all tables
+                for c in creates:
+                    try:
+                        cur.execute(c)
+                    except Exception as e:
+                        warnings.append(f"Skipped incompatible CREATE statement: {str(e)[:80]}")
+
+                # Execute each INSERT individually to tolerate partial failures
+                for i in inserts:
+                    try:
+                        cur.execute(i)
+                    except Exception:
+                        pass
+
                 conn.commit()
-                
+
                 if selects:
-                    # Strategy A
+                    # Strategy A: run SELECT statements
                     dfs = []
                     for s in selects:
-                        try: dfs.append(pd.read_sql_query(s, conn))
-                        except Exception: pass
+                        try:
+                            dfs.append(pd.read_sql_query(s, conn))
+                        except Exception:
+                            pass
                     if dfs:
                         df = max(dfs, key=len)
                 elif creates or inserts:
-                    # Strategy B
+                    # Strategy B: dump all created tables
                     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
                     tables = cur.fetchall()
                     dfs = []
                     for t in tables:
-                        try: dfs.append(pd.read_sql_query(f"SELECT * FROM {t[0]};", conn))
-                        except Exception: pass
+                        try:
+                            dfs.append(pd.read_sql_query(f"SELECT * FROM \"{t[0]}\";", conn))
+                        except Exception:
+                            pass
                     if dfs:
                         df = max(dfs, key=len)
+            except Exception as e:
+                warnings.append(f"SQL execution failed: {e}")
+            finally:
                 conn.close()
-        except Exception as e:
-            warnings.append(f"SQL execution failed: {e}")
             
         # STRATEGY C
         if df.empty:

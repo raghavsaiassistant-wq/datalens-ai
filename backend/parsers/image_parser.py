@@ -93,7 +93,16 @@ Return ONLY valid JSON."""
         from ai.nim_client import MODELS
         client = nim_client._clients.get(model_name)
         if client is None:
-            raise ValueError(f"Vision model '{model_name}' is not loaded. Ensure {MODELS[model_name]['key_env']} is set in your .env file.")
+            # Try the other available vision model before giving up
+            fallback = "nemotron_ocr" if model_name == "qwen_vl" else "qwen_vl"
+            client = nim_client._clients.get(fallback)
+            if client is not None:
+                model_name = fallback
+            else:
+                raise ValueError(
+                    "No vision model is loaded. Set KEY_QWEN_VL or KEY_OCR in your "
+                    "environment variables to enable image/chart analysis."
+                )
         messages = [{
             "role": "user",
             "content": [
