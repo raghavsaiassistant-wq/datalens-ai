@@ -21,6 +21,11 @@ from utils.file_router import FileRouter
 from ai.findings_generator import FindingsGenerator
 from ai.nim_client import NIMClient
 from utils.session_store import SessionStore
+from ai.insight_engine import InsightEngine
+from ai.date_intelligence import DateIntelligence
+from ai.filter_trigger import FilterTrigger
+from utils.data_serializer import DataSerializer
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -144,13 +149,54 @@ def analyze():
             
             # 2. AI Generation
             analysis_result = generator.generate(profile, nim_client, progress_callback=update_cb)
-            
-            # 3. Finalize
+
+            # 3. v2.0 — InsightEngine + DateIntelligence + DataSerializer
+            try:
+                insight_engine = InsightEngine()
+                analysis_result["insights"] = insight_engine.generate_insights(
+                    profile, analysis_result.get("anomalies", []), nim_client
+                )
+            except Exception as ie:
+                logging.warning(f"InsightEngine skipped: {ie}")
+                analysis_result["insights"] = {"l1_facts": [], "l2_causes": [], "l3_insights": []}
+
+            try:
+                date_metrics = {}
+                if profile.has_datetime:
+                    date_col = next(
+                        (c for c, t in profile.column_types.items() if t == 'datetime'), None
+                    )
+                    numeric_cols = [c for c, t in profile.column_types.items() if t == 'numeric']
+                    if date_col:
+                        date_intel = DateIntelligence()
+                        date_metrics = date_intel.analyze(profile.df, date_col, numeric_cols, profile)
+                analysis_result["date_metrics"] = date_metrics
+            except Exception as de:
+                logging.warning(f"DateIntelligence skipped: {de}")
+                analysis_result["date_metrics"] = {}
+
+            try:
+                serializer = DataSerializer()
+                analysis_result["serialized_data"] = serializer.serialize_for_frontend(profile.df, profile)
+            except Exception as se:
+                logging.warning(f"DataSerializer skipped: {se}")
+                analysis_result["serialized_data"] = {"records": [], "sampled": False, "sample_size": 0, "column_stats": {}, "top_correlations": [], "kpi_series": {}}
+
+            # 4. Finalize
             session_id = str(uuid.uuid4())
             session_data = {
                 "result": analysis_result,
                 "profile_text": profile.text_content if hasattr(profile, "text_content") else "",
-                "file_name": name
+                "file_name": name,
+                "profile_metadata": {
+                    "rows": profile.rows,
+                    "cols": profile.cols,
+                    "numeric_summary": profile.numeric_summary,
+                    "kpi_columns": profile.kpi_columns,
+                    "column_types": profile.column_types,
+                    "has_datetime": profile.has_datetime,
+                },
+                "anomalies": analysis_result.get("anomalies", [])
             }
             session_store.save(session_id, session_data)
             
@@ -254,6 +300,55 @@ def get_session(session_id):
 def delete_session(session_id):
     session_store.delete(session_id)
     return jsonify({"status": "deleted"})
+
+@app.route("/api/regenerate-insights", methods=["POST"])
+@limiter.limit("5 per minute")
+def regenerate_insights():
+    """Re-run the InsightEngine chain for a filtered subset of data."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "data": None, "error": "Missing JSON body"}), 400
+
+    session_id = data.get("session_id")
+    filter_context = data.get("filter_context", {})
+
+    if not session_id:
+        return jsonify({"success": False, "data": None, "error": "Missing session_id"}), 400
+
+    session = session_store.get(session_id)
+    if not session:
+        return jsonify({"success": False, "data": None, "error": "Session not found or expired"}), 404
+
+    profile_metadata = session.get("profile_metadata", {})
+    anomalies = session.get("anomalies", [])
+
+    trigger = FilterTrigger()
+    if not trigger.should_regenerate(
+        {"rows": profile_metadata.get("rows", 0)},
+        {"rows": filter_context.get("filtered_rows", 0)}
+    ):
+        return jsonify({"success": True, "data": {"insights": None, "regenerated": False}, "error": None})
+
+    # Build a lightweight profile namespace for InsightEngine (no full DataFrame needed)
+    from types import SimpleNamespace
+    mock_profile = SimpleNamespace(
+        rows=profile_metadata.get("rows", 0),
+        cols=profile_metadata.get("cols", 0),
+        numeric_summary=profile_metadata.get("numeric_summary", {}),
+        kpi_columns=profile_metadata.get("kpi_columns", []),
+        column_types=profile_metadata.get("column_types", {}),
+        has_datetime=profile_metadata.get("has_datetime", False),
+        df=pd.DataFrame()
+    )
+
+    try:
+        engine = InsightEngine()
+        insights = engine.generate_insights(mock_profile, anomalies, nim_client, filter_context)
+        return jsonify({"success": True, "data": {"insights": insights, "regenerated": True}, "error": None})
+    except Exception as e:
+        logging.error(f"regenerate_insights failed: {e}")
+        return jsonify({"success": False, "data": None, "error": str(e)}), 500
+
 
 @app.errorhandler(429)
 def rate_limit_exceeded(e):

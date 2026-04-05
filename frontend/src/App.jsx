@@ -1,20 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAnalysis } from './hooks/useAnalysis';
 import FileUpload from './components/FileUpload';
 import AnalysisProgress from './components/AnalysisProgress';
-import Dashboard from './components/Dashboard';
 import SummaryPanel from './components/SummaryPanel';
 import FindingsCard from './components/FindingsCard';
 import AnomalyAlert from './components/AnomalyAlert';
 import NextSteps from './components/NextSteps';
 import QAPanel from './components/QAPanel';
+import SmartDashboard from './components/SmartDashboard';
+import { DataStoreProvider, useDataStore } from './store/dataStore';
+import { useFilteredInsights } from './hooks/useFilteredInsights';
 import { RefreshCcw, AlertCircle, Linkedin, ExternalLink } from 'lucide-react';
 
-function App() {
+// ─── Inner app — has access to both useAnalysis and useDataStore ──────── //
+function AppInner() {
   const {
     uploadFile, askQuestion, resetAnalysis,
-    analysisResult, isLoading, loadingStep, progress, error, uploadStartTime
+    analysisResult, isLoading, loadingStep, progress, error, sessionId, uploadStartTime
   } = useAnalysis();
+
+  const { dispatch } = useDataStore();
+
+  // Sync analysisResult into DataStore whenever it arrives
+  useEffect(() => {
+    if (analysisResult) {
+      dispatch({ type: 'SET_RAW_DATA', payload: analysisResult });
+    } else {
+      dispatch({ type: 'RESET' });
+    }
+  }, [analysisResult, dispatch]);
+
+  // Hook up insight regeneration lifecycle
+  useFilteredInsights(sessionId);
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] selection:bg-accent/20 selection:text-[#1D1D1F] text-[#1D1D1F] overflow-x-hidden">
@@ -115,8 +132,8 @@ function App() {
                 <FindingsCard findings={analysisResult.key_findings} />
               </div>
 
-              {/* Charts */}
-              <Dashboard charts={analysisResult.charts} />
+              {/* Smart Dashboard: FilterBar + InsightsPanel + Charts */}
+              <SmartDashboard charts={analysisResult.charts} />
 
               {/* Next steps */}
               <NextSteps steps={analysisResult.next_steps} />
@@ -128,7 +145,7 @@ function App() {
             {/* ── Footer ── */}
             <footer className="pt-10 pb-8 border-t border-black/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-[#8E8E93]">
-                DataLens AI · Neural Data Model v1.0 · © 2026 DataLens Labs
+                DataLens AI · Neural Data Model v2.0 · © 2026 DataLens Labs
               </p>
               <a
                 href="https://www.linkedin.com/in/raghav-modi-a94b60228"
@@ -149,6 +166,15 @@ function App() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+// ─── Root: wraps AppInner with DataStoreProvider ──────────────────────── //
+function App() {
+  return (
+    <DataStoreProvider>
+      <AppInner />
+    </DataStoreProvider>
   );
 }
 
