@@ -9,7 +9,7 @@
  * and are unchanged — only the visible data layer is filtered via filteredData.
  */
 import React from 'react';
-import { useDataStore } from '../store/dataStore';
+import { useDataStore } from '../store/dataStore.jsx';
 import FilterBar from './FilterBar';
 import InsightsPanel from './InsightsPanel';
 import Dashboard from './Dashboard';

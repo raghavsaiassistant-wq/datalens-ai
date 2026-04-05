@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, Brain, Calendar, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { useDataStore } from '../store/dataStore';
+import { useDataStore } from '../store/dataStore.jsx';
 import { buildDynamicDateMetrics } from '../utils/dateMetrics';
 
 // ─── Urgency config ───────────────────────────────────────────────────── //

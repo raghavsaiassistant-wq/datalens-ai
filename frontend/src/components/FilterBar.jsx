@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { SlidersHorizontal, X, RefreshCw, Calendar, ChevronDown } from 'lucide-react';
-import { useDataStore } from '../store/dataStore';
+import { useDataStore } from '../store/dataStore.jsx';
 import { shouldTriggerRegeneration } from '../utils/filterTrigger';
 
 export default function FilterBar() {

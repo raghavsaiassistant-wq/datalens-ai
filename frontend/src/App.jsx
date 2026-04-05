@@ -8,7 +8,7 @@ import AnomalyAlert from './components/AnomalyAlert';
 import NextSteps from './components/NextSteps';
 import QAPanel from './components/QAPanel';
 import SmartDashboard from './components/SmartDashboard';
-import { DataStoreProvider, useDataStore } from './store/dataStore';
+import { DataStoreProvider, useDataStore } from './store/dataStore.jsx';
 import { useFilteredInsights } from './hooks/useFilteredInsights';
 import { RefreshCcw, AlertCircle, Linkedin, ExternalLink } from 'lucide-react';
 

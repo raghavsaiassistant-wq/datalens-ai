@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useDataStore } from '../store/dataStore';
+import { useDataStore } from '../store/dataStore.jsx';
 import { shouldTriggerRegeneration } from '../utils/filterTrigger';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://datalens-ai.onrender.com';
