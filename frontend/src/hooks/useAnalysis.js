@@ -22,11 +22,12 @@ export const useAnalysis = () => {
     formData.append("file", file);
 
     try {
-      // 1. Start Job
+      // 1. Start Job — 60s timeout for upload + initial processing
       const res = await axios.post(`${API_BASE}/api/analyze`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000
       });
-      
+
       if (!res.data.success) {
         throw new Error(res.data.error || "Failed to start analysis.");
       }
@@ -36,14 +37,17 @@ export const useAnalysis = () => {
 
       // 2. Poll Status
       let retryCount = 0;
-      const MAX_RETRIES = 10;
+      const MAX_RETRIES = 30; // 30 retries gives ~90s of breathing room
 
       const poll = async () => {
         try {
-          const statusRes = await axios.get(`${API_BASE}/api/status/${jobId}`);
+          const statusRes = await axios.get(`${API_BASE}/api/status/${jobId}`, {
+            timeout: 15000
+          });
 
-          if (!statusRes.data.success) {
-            throw new Error(statusRes.data.error || "Failed to fetch status.");
+          // 404 means job not found — server likely restarted (Render free tier spin-up)
+          if (statusRes.status === 404 || !statusRes.data.success) {
+            throw new Error(statusRes.data?.error || "Job not found on server.");
           }
 
           retryCount = 0; // reset on successful response
@@ -65,14 +69,23 @@ export const useAnalysis = () => {
             setTimeout(poll, 800);
           }
         } catch (pollErr) {
+          // If the server explicitly said the job doesn't exist, stop immediately
+          if (pollErr.response?.status === 404) {
+            setError("Analysis session expired. The server may have restarted — please re-upload your file.");
+            setIsLoading(false);
+            return;
+          }
+
           retryCount += 1;
           if (retryCount >= MAX_RETRIES) {
             setError("Connection lost after multiple retries. Please check your network and try again.");
             setIsLoading(false);
             return;
           }
-          setLoadingStep("Connection interrupted. Retrying...");
-          setTimeout(poll, 2000);
+          // Exponential backoff: 2s, 3s, 4s, ... capped at 8s
+          const delay = Math.min(2000 + (retryCount - 1) * 500, 8000);
+          setLoadingStep(`Connection interrupted. Retrying (${retryCount}/${MAX_RETRIES})...`);
+          setTimeout(poll, delay);
         }
       };
 
