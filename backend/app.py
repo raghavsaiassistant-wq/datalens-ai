@@ -21,6 +21,7 @@ from utils.file_router import FileRouter
 from ai.findings_generator import FindingsGenerator
 from ai.nim_client import NIMClient
 from utils.session_store import SessionStore
+from utils.job_store import JobStore
 from ai.insight_engine import InsightEngine
 from ai.date_intelligence import DateIntelligence
 from ai.filter_trigger import FilterTrigger
@@ -32,21 +33,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 app = Flask(__name__)
 limiter = Limiter(get_remote_address, app=app, default_limits=[], storage_uri="memory://")
 
-# Job Store for Polling
-# Format: { job_id: { "status": "processing", "progress": 1, "message": "...", "result": None, "error": None } }
-JOBS = {}
-JOBS_LOCK = threading.Lock()
+# Job Store for Polling — SQLite-backed, shared across all gunicorn workers
+job_store = JobStore()
 JOB_TTL_SECONDS = 3600  # 1 hour
-
-def cleanup_old_jobs():
-    """Remove completed/failed jobs older than JOB_TTL_SECONDS."""
-    now = time.time()
-    with JOBS_LOCK:
-        expired = [jid for jid, j in JOBS.items()
-                   if j["status"] in ("completed", "failed")
-                   and now - j.get("created_at", now) > JOB_TTL_SECONDS]
-        for jid in expired:
-            del JOBS[jid]
 import re as _re
 CORS(app, origins=[
     "http://localhost:5173",
@@ -115,29 +104,15 @@ def analyze():
     save_path = os.path.join(UPLOAD_FOLDER, f"{file_id}_{safe_name}")
     file.save(save_path)
     
-    # Cleanup stale jobs before creating a new one
-    cleanup_old_jobs()
-
-    # Initialize Job
-    with JOBS_LOCK:
-        JOBS[job_id] = {
-            "status": "processing",
-            "progress": 1,
-            "message": "📂 Reading your file...",
-            "result": None,
-            "error": None,
-            "file_name": safe_name,
-            "created_at": time.time()
-        }
+    # Cleanup stale jobs then create new one in shared SQLite store
+    job_store.cleanup(JOB_TTL_SECONDS)
+    job_store.create(job_id, safe_name)
 
     # Run Analysis in Background
     def background_analysis(jid, path, name):
         try:
             def update_cb(step, msg):
-                with JOBS_LOCK:
-                    if jid in JOBS:
-                        JOBS[jid]["progress"] = step
-                        JOBS[jid]["message"] = msg
+                job_store.update(jid, progress=step, message=msg)
 
             # 1. Route/Profile (Step 1-2 happens inside generator now via callback)
             profile = router.route(path, name, nim_client=nim_client)
@@ -195,21 +170,15 @@ def analyze():
             }
             session_store.save(session_id, session_data)
             
-            with JOBS_LOCK:
-                if jid in JOBS:
-                    JOBS[jid]["status"] = "completed"
-                    JOBS[jid]["progress"] = 6
-                    JOBS[jid]["message"] = "🎉 Analysis complete!"
-                    JOBS[jid]["result"] = {
-                        "session_id": session_id,
-                        "data": analysis_result
-                    }
+            job_store.update(jid,
+                status="completed",
+                progress=6,
+                message="🎉 Analysis complete!",
+                result={"session_id": session_id, "data": analysis_result}
+            )
         except Exception as e:
             logging.error(f"Job {jid} failed: {e}")
-            with JOBS_LOCK:
-                if jid in JOBS:
-                    JOBS[jid]["status"] = "failed"
-                    JOBS[jid]["error"] = str(e)
+            job_store.update(jid, status="failed", error=str(e))
         finally:
             if os.path.exists(path):
                 os.remove(path)
@@ -227,21 +196,19 @@ def analyze():
 
 @app.route("/api/status/<job_id>", methods=["GET"])
 def get_status(job_id):
-    with JOBS_LOCK:
-        job = JOBS.get(job_id)
-        if not job:
-            return jsonify({"success": False, "data": None, "error": "Job not found"}), 404
-        
-        return jsonify({
-            "success": True,
-            "data": {
-                "status": job["status"],
-                "progress": job["progress"],
-                "message": job["message"],
-                "result": job["result"]
-            },
-            "error": job["error"]
-        })
+    job = job_store.get(job_id)
+    if not job:
+        return jsonify({"success": False, "data": None, "error": "Job not found"}), 404
+    return jsonify({
+        "success": True,
+        "data": {
+            "status": job["status"],
+            "progress": job["progress"],
+            "message": job["message"],
+            "result": job["result"]
+        },
+        "error": job["error"]
+    })
 
 @app.route("/api/ask", methods=["POST"])
 def ask():
