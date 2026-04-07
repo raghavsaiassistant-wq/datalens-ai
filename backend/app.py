@@ -86,17 +86,12 @@ def root():
 @app.route("/health", methods=["GET"])
 @app.route("/api/health", methods=["GET"])
 def health():
-    # Fast check: just see if we have at least one client loaded
-    has_keys = len(nim_client._clients) > 0
+    # Instant response — used by UptimeRobot to keep Render awake
     return jsonify({
-        "success": True,
-        "data": {
-            "status": "healthy" if has_keys else "degraded",
-            "clients_loaded": len(nim_client._clients),
-            "version": "1.0.0"
-        },
-        "error": None
-    })
+        "status": "ok",
+        "version": "1.0.0",
+        "workers": "1"
+    }), 200
 
 @app.route("/api/analyze", methods=["POST"])
 @limiter.limit("5 per minute")
