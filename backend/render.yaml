@@ -2,14 +2,24 @@ services:
   - type: web
     name: datalens-ai-backend
     runtime: python
-    rootDir: .
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 180
-    healthCheckPath: /health
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:$PORT app:app"
+    plan: free
+    healthCheckPath: /api/health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
+      - key: OLLAMA_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        value: https://ollama.com
       - key: FLASK_ENV
         value: production
-      - key: WEB_CONCURRENCY
-        value: "1"
+      - key: MAX_FILE_SIZE_MB
+        value: "25"
+      - key: JOB_TTL_SECONDS
+        value: "3600"
+      - key: SAMPLE_MAX_ROWS_FOR_AI
+        value: "500"
+      - key: SAMPLE_MAX_ROWS_FOR_DISPLAY
+        value: "30000"
+      - key: PYTHON_VERSION
+        value: 3.11.9

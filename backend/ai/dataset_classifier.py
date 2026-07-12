@@ -149,7 +149,17 @@ class DatasetClassifier:
         if clow.endswith("_id") or (clow.endswith("id") and len(clow) > 2):
             return True
         # Integer with high cardinality — but skip when the name looks like
-        # an attribute/segment (age, score, grade, store, etc.) rather than an ID
+        # an attribute/segment (age, score, grade, store, etc.) rather than an ID.
+        # ALSO skip when the column name has financial/measure keywords (revenue,
+        # sales, price, cost, amount, units, count, qty, quantity, total, profit,
+        # margin, budget, expense) — these are MEASURES not IDs.
+        MEASURE_KEYWORDS = {"revenue", "sales", "price", "cost", "amount", "units",
+                            "count", "qty", "quantity", "total", "profit", "margin",
+                            "budget", "expense", "value", "fee", "rate", "score",
+                            "balance", "tax", "discount"}
+        for mk in MEASURE_KEYWORDS:
+            if mk in clow:
+                return False
         if pd.api.types.is_integer_dtype(series.dtype):
             # Reject cardinality-based detection for obvious measurement columns
             for seg_kw in SEGMENT_KEYWORDS:

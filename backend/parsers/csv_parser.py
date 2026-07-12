@@ -11,24 +11,31 @@ from utils.data_profiler import DataProfiler
 class CSVParser(BaseParser):
     """Parser for CSV data sources."""
     
-    def parse(self, file_path: str, file_name: str) -> DataProfile:
+    def parse(self, file_path: str, file_name: str, max_rows: int = None) -> DataProfile:
         """
         Parses a CSV file and routes it through the DataProfiler.
+        max_rows: optional cap (used for /api/preview to read only first 500 rows).
         """
         start_time = time.time()
         warnings = []
-        
+
         # 1. Validate extension
         self._validate_file(file_path, ['.csv', '.txt'])
-        
+
         # 2. Detect encoding
         encoding = self._detect_encoding(file_path)
-        
+
         # 3 & 4. Read CSV with detected encoding or fallback
+        read_kwargs = {"encoding": encoding}
+        if max_rows is not None:
+            read_kwargs["nrows"] = max_rows
         try:
-            df = pd.read_csv(file_path, encoding=encoding)
+            df = pd.read_csv(file_path, **read_kwargs)
         except Exception:
-            df = pd.read_csv(file_path, encoding="latin-1", on_bad_lines="skip")
+            fallback = {"encoding": "latin-1", "on_bad_lines": "skip"}
+            if max_rows is not None:
+                fallback["nrows"] = max_rows
+            df = pd.read_csv(file_path, **fallback)
             warnings.append("Failed to read with detected encoding. Fell back to latin-1.")
             
         # Error handling
