@@ -758,6 +758,67 @@ def get_multi_profile(job_id):
     return jsonify({"success": True, **multi})
 
 
+@app.route("/api/multi/er-diagram/<job_id>", methods=["GET"])
+def get_er_diagram(job_id):
+    """Return Mermaid ER diagram syntax for the detected relationships."""
+    job = job_store.get(job_id)
+    if not job or job.get("status") != "completed":
+        return jsonify({"success": False, "error": "Job not found or not completed"}), 404
+    result = job.get("result", {})
+    multi = result.get("multi_file", {})
+    if not multi:
+        return jsonify({"success": False, "error": "No multi-file data"}), 404
+
+    # Build Mermaid ER diagram
+    lines = ["erDiagram"]
+    schema = multi.get("unified_schema", {})
+    fact = schema.get("fact_table", "fact")
+    dimensions = schema.get("dimension_tables", [])
+
+    # Define tables
+    lines.append(f"    {fact} {{")
+    file_profiles = multi.get("file_profiles", {})
+    if fact in file_profiles:
+        for col, prof in file_profiles[fact].get("column_profiles", {}).items():
+            dtype = prof.get("dtype", "string")
+            mm_type = {"int": "int", "float": "float", "string": "string", "datetime": "datetime", "bool": "bool"}.get(dtype, "string")
+            lines.append(f"        {mm_type} {col}")
+    lines.append("    }")
+
+    for dim in dimensions:
+        lines.append(f"    {dim} {{")
+        if dim in file_profiles:
+            for col, prof in file_profiles[dim].get("column_profiles", {}).items():
+                dtype = prof.get("dtype", "string")
+                mm_type = {"int": "int", "float": "float", "string": "string", "datetime": "datetime", "bool": "bool"}.get(dtype, "string")
+                lines.append(f"        {mm_type} {col}")
+        lines.append("    }")
+
+    # Relationships (Mermaid syntax: TABLE1 ||--o{ TABLE2 : "label")
+    for rel in multi.get("relationships", []):
+        from_f = rel['from_file']
+        to_f = rel['to_file']
+        from_c = rel['from_column']
+        to_c = rel['to_column']
+        rel_type = rel['relationship_type']
+        # Mermaid syntax: ||--o{ (one to many), ||--|| (one to one), }o--o{ (many to many)
+        if rel_type == "one_to_one":
+            symbol = "||--||"
+        elif rel_type == "many_to_one":
+            # from is many, to is one: }o--|| 
+            symbol = "}o--||"
+        else:
+            symbol = "}|--|{"
+        lines.append(f"    {to_f} {symbol} {from_f} : \"{to_c}={from_c}\"")
+
+    mermaid_code = "\n".join(lines)
+    return jsonify({
+        "success": True,
+        "mermaid": mermaid_code,
+        "render_url": f"https://mermaid.ink/img/{mermaid_code}",
+    })
+
+
 # ── Error handlers ────────────────────────────────────────────────
 @app.errorhandler(413)
 def too_large(e):
