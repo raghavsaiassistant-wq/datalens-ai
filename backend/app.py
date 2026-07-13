@@ -669,6 +669,13 @@ def analyze_multi():
     if len(file_list) > 10:
         return jsonify({"success": False, "error": "Maximum 10 files allowed"}), 400
 
+    # Sprint 12: Request validation
+    from ai.hardening import RequestValidator
+    files_for_validation = [("files", (f.filename, f, f.mimetype)) for f in file_list]
+    validation = RequestValidator.validate_multi_file_request(files_for_validation)
+    if not validation["valid"]:
+        return jsonify({"success": False, "error": validation["error"]}), 400
+
     # Read content + metadata
     files_payload = []
     for f in file_list:
@@ -828,10 +835,16 @@ def get_er_diagram(job_id):
         lines.append(f"    {to_f} {symbol} {from_f} : \"{to_c}={from_c}\"")
 
     mermaid_code = "\n".join(lines)
+    n_rels = len(multi.get("relationships", []))
     return jsonify({
         "success": True,
         "mermaid": mermaid_code,
         "render_url": f"https://mermaid.ink/img/{mermaid_code}",
+        "file_count": multi.get("file_count", 0),
+        "relationship_count": n_rels,
+        "fact_table": fact,
+        "dimension_count": len(dimensions),
+        "view_url": f"/er-diagram.html?job_id={job_id}",
     })
 
 
@@ -973,6 +986,32 @@ def too_large(e):
 @app.errorhandler(429)
 def rate_limited(e):
     return jsonify({"success": False, "error": "Rate limit hit. Wait 60s and retry."}), 429
+
+
+# ── Sprint 12: Production hardening ─────────────────────────────
+@app.route("/api/multi/health", methods=["GET"])
+def multi_health():
+    """Health check with circuit breaker status (Sprint 12)."""
+    from ai.hardening import ollama_breaker, health_check
+    h = health_check()
+    return jsonify({
+        "success": True,
+        "service": "multi_file",
+        "ollama_circuit": h["ollama_circuit"],
+        "ollama_failures": h["ollama_failures"],
+        "timestamp": h["timestamp"],
+        "uptime_s": h["uptime_s"],
+    })
+
+
+@app.route("/api/multi/circuit/reset", methods=["POST"])
+def reset_circuit():
+    """Manually reset circuit breaker (admin endpoint)."""
+    from ai.hardening import ollama_breaker
+    ollama_breaker.failures = 0
+    ollama_breaker.state = "closed"
+    ollama_breaker.last_failure_time = None
+    return jsonify({"success": True, "message": "Circuit breaker reset"})
 
 
 if __name__ == "__main__":

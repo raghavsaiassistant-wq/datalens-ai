@@ -1,0 +1,32 @@
+# Render.com deployment config for DataLens AI backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: datalens-ai-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 5000
+      - key: OLLAMA_CLOUD_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        value: https://ollama.com
+      - key: LOG_LEVEL
+        value: INFO
+      - key: MAX_FILE_SIZE
+        value: "26214400"  # 25MB
+      - key: MAX_TOTAL_ROWS
+        value: "100000"
+    disk:
+      name: datalens-jobs
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

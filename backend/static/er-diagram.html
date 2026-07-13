@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataLens AI — Schema Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0e1a; color: #e0e6ed; padding: 20px; }
+  .header { max-width: 1200px; margin: 0 auto 30px; }
+  .header h1 { color: #4dabf7; margin-bottom: 8px; }
+  .header p { color: #889; font-size: 14px; }
+  .stats { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+  .stat { background: #1a1f2e; padding: 12px 20px; border-radius: 8px; border: 1px solid #2a3142; }
+  .stat-label { color: #889; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { color: #4dabf7; font-size: 24px; font-weight: bold; }
+  .stat-warn .stat-value { color: #ffa94d; }
+  .container { max-width: 1200px; margin: 0 auto; background: #1a1f2e; border-radius: 12px; padding: 30px; border: 1px solid #2a3142; }
+  .mermaid { background: white; padding: 20px; border-radius: 8px; }
+  .loading { text-align: center; padding: 60px; color: #889; }
+  .err { color: #ff6b6b; padding: 20px; }
+  .legend { background: #0f1420; padding: 16px; border-radius: 8px; margin-top: 20px; font-size: 13px; }
+  .legend-item { display: inline-block; margin-right: 20px; }
+  .legend-line { display: inline-block; width: 30px; height: 2px; vertical-align: middle; margin-right: 6px; }
+  .legend-line.solid { background: #4dabf7; }
+  .legend-line.dashed { background: #ffd43b; border-top: 2px dashed #ffd43b; background: transparent; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🗂 DataLens AI — Schema Diagram</h1>
+  <p id="subtitle">Loading relationships...</p>
+</div>
+<div id="stats" class="stats"></div>
+<div class="container">
+  <div id="diagram" class="mermaid">Loading...</div>
+</div>
+<div class="legend">
+  <strong>Legend:</strong>
+  <span class="legend-item"><span class="legend-line solid"></span>FK relationship</span>
+  <span class="legend-item">||--o{ : one-to-many</span>
+  <span class="legend-item">||--|| : one-to-one</span>
+  <span class="legend-item">}o--o{ : many-to-many</span>
+</div>
+
+<script>
+const JOB_ID = window.location.pathname.split('/').pop();
+
+async function load() {
+  try {
+    const r = await fetch(`/api/multi/er-diagram/${JOB_ID}`);
+    if (!r.ok) throw new Error('Failed to load diagram');
+    const data = await r.json();
+
+    if (!data.success) {
+      document.getElementById('diagram').innerHTML = `<div class="err">Error: ${data.error}</div>`;
+      return;
+    }
+
+    // Set up Mermaid
+    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+    const diagram = data.mermaid;
+    document.getElementById('subtitle').textContent =
+      `Job ${JOB_ID.substring(0, 8)}... — ${data.relationship_count} relationships across ${data.file_count} files`;
+
+    // Render
+    const { svg } = await mermaid.render('er-diagram-svg', diagram);
+    document.getElementById('diagram').innerHTML = svg;
+
+    // Stats
+    const stats = document.getElementById('stats');
+    stats.innerHTML = `
+      <div class="stat"><div class="stat-label">Files</div><div class="stat-value">${data.file_count}</div></div>
+      <div class="stat"><div class="stat-label">Relationships</div><div class="stat-value">${data.relationship_count}</div></div>
+      <div class="stat"><div class="stat-label">Fact Table</div><div class="stat-value" style="font-size:16px;">${data.fact_table}</div></div>
+      <div class="stat"><div class="stat-label">Dimensions</div><div class="stat-value">${data.dimension_count}</div></div>
+    `;
+  } catch (e) {
+    document.getElementById('diagram').innerHTML = `<div class="err">Error: ${e.message}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

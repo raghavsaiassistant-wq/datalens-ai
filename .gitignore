@@ -1,36 +1,24 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyc
-*.pyo
-.venv/
-venv/
+# Ignore persisted job data
+data/
 
-# Test artifacts
-test_compile/
-test_sample/
-test_*.pbit
-test_output.pbit
-sample.pbit
-backend/.pbix-sample-cache/
-
-# pbi-tools binary is large — keep under version control for portability,
-# but exclude the original install zip
-backend/pbi-tools/pbi-tools.zip
-backend/pbi-tools/_install.zip
-
-# OS
-.DS_Store
+# OS files
 Thumbs.db
+.DS_Store
 
 # IDE
 .vscode/
 .idea/
+*.swp
 
-# Env
-.env.local
-.env.*.local
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
 
-# Test data
-*.pbit
-*.pbix
+# Node
+node_modules/
+dist/
+
+# Local test data (not part of repo)
+test_data/
