@@ -731,6 +731,22 @@ def analyze_multi():
             session_store.save(job_id, result)
             job_store.update(job_id, status="completed", progress=6,
                               message="✅ Multi-file analysis complete", result=result)
+
+            # Sprint 6: Persist to disk
+            try:
+                from ai.multi_file_store import multi_file_store
+                # files_payload is [(file_id, file_name, content_bytes), ...]
+                file_bytes = {fname: content for _, fname, content in files_payload}
+                multi_file_store.save_job(
+                    job_id=job_id,
+                    file_bytes=file_bytes,
+                    relationships=pipeline_result.get("relationships", []),
+                    schema=pipeline_result.get("unified_schema", {}),
+                    unified_profile=pipeline_result.get("unified_data", {}),
+                    ai_result={"summary": result.get("executive_summary", "")[:500]},
+                )
+            except Exception as persist_err:
+                logger.warning(f"Persistence failed for {job_id}: {persist_err}")
         except Exception as e:
             logger.error(f"Multi-file analysis failed: {e}", exc_info=True)
             job_store.update(job_id, status="failed", error=str(e))
@@ -855,6 +871,96 @@ def multi_drilldown(job_id):
         "records": filtered[:limit],
         "columns": records_columns,
         "hint": f"Cross-file drilldown on '{column}={value}'. Use /api/multi/profile/<job_id> to see related files."
+    })
+
+
+# ── Sprint 6-8 endpoints (persistent store, quality, lineage) ──
+
+@app.route("/api/multi/jobs", methods=["GET"])
+def list_multi_jobs():
+    """List all persisted multi-file jobs (Sprint 6)."""
+    from ai.multi_file_store import multi_file_store
+    jobs = multi_file_store.list_jobs()
+    return jsonify({
+        "success": True,
+        "job_count": len(jobs),
+        "jobs": [
+            {
+                "job_id": j["job_id"],
+                "file_count": j.get("file_count"),
+                "relationship_count": j.get("relationship_count"),
+                "created_at": j.get("created_at"),
+                "file_names": j.get("file_names", []),
+            }
+            for j in jobs
+        ],
+        "disk_usage": multi_file_store.disk_usage(),
+    })
+
+
+@app.route("/api/multi/persistence/<job_id>", methods=["GET"])
+def get_persistence_info(job_id):
+    """Get info about a persisted job (Sprint 6)."""
+    from ai.multi_file_store import multi_file_store
+    meta = multi_file_store.load_job(job_id)
+    if not meta:
+        return jsonify({"success": False, "error": "Job not found or not persisted"}), 404
+    return jsonify({"success": True, "persisted": True, "meta": meta})
+
+
+@app.route("/api/multi/quality/<job_id>", methods=["GET"])
+def get_data_quality(job_id):
+    """Get data quality report for a multi-file job (Sprint 7)."""
+    job = job_store.get(job_id)
+    if not job or job.get("status") != "completed":
+        return jsonify({"success": False, "error": "Job not found or not completed"}), 404
+    result = job.get("result", {})
+    multi = result.get("multi_file", {})
+    quality = multi.get("data_quality", {})
+    if not quality:
+        return jsonify({"success": False, "error": "No quality data (run analysis first)"}), 404
+    return jsonify({"success": True, "quality": quality})
+
+
+@app.route("/api/multi/lineage/<job_id>", methods=["GET"])
+def get_lineage(job_id):
+    """Get column-level lineage (Sprint 8)."""
+    job = job_store.get(job_id)
+    if not job or job.get("status") != "completed":
+        return jsonify({"success": False, "error": "Job not found or not completed"}), 404
+    result = job.get("result", {})
+    multi = result.get("multi_file", {})
+    lineage_obj = multi.get("lineage", {})
+    # Unwrap if it's nested in {columns, summary}
+    if "columns" in lineage_obj:
+        lineage_dict = lineage_obj["columns"]
+    else:
+        lineage_dict = lineage_obj
+    if not lineage_dict:
+        return jsonify({"success": False, "error": "No lineage data (run analysis first)"}), 404
+    return jsonify({"success": True, "lineage": lineage_dict, "summary": lineage_obj.get("summary", {})})
+
+
+@app.route("/api/multi/lineage/<job_id>/<column>", methods=["GET"])
+def trace_lineage(job_id, column):
+    """Trace a specific output column back to its source (Sprint 8)."""
+    job = job_store.get(job_id)
+    if not job or job.get("status") != "completed":
+        return jsonify({"success": False, "error": "Job not found or not completed"}), 404
+    result = job.get("result", {})
+    multi = result.get("multi_file", {})
+    lineage_obj = multi.get("lineage", {})
+    if "columns" in lineage_obj:
+        lineage_dict = lineage_obj["columns"]
+    else:
+        lineage_dict = lineage_obj
+    if column not in lineage_dict:
+        return jsonify({"success": False, "error": f"Column '{column}' not found",
+                        "available": list(lineage_dict.keys())[:10]}), 404
+    return jsonify({
+        "success": True,
+        "column": column,
+        "source": lineage_dict[column],
     })
 
 

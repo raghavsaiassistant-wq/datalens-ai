@@ -541,6 +541,30 @@ def run_multi_file_pipeline(
         if unified_df[c].dtype == 'object' and unified_df[c].nunique() < 50
     ]
 
+    # Sprint 7: Data quality checks per file
+    from ai.data_quality import check_data_quality, quality_summary
+    quality_reports = {}
+    for name, df in dataframes.items():
+        try:
+            quality_reports[name] = check_data_quality(name, df)
+        except Exception as e:
+            quality_reports[name] = {"error": str(e), "score": 0}
+    quality_agg = quality_summary(quality_reports)
+
+    # Sprint 8: Build column-level lineage
+    from ai.lineage import build_lineage, lineage_summary
+    file_columns_map = {name: list(df.columns) for name, df in dataframes.items()}
+    lineage_dict = build_lineage(
+        list(dataframes.keys()),
+        file_columns_map,
+        [r.to_dict() for r in relationships],
+        schema.fact_table,
+        schema.dimension_tables,
+    )
+    lineage_agg = lineage_summary(
+        lineage_dict, [r.to_dict() for r in relationships]
+    )
+
     # Build the response
     return {
         "success": True,
@@ -558,6 +582,14 @@ def run_multi_file_pipeline(
             "categorical_cols": categorical_cols,
             "numeric_cols": numeric_cols,
             "sample_records": unified_df.head(10).fillna('').astype(str).to_dict(orient='records'),
+        },
+        "data_quality": {
+            "per_file": quality_reports,
+            "summary": quality_agg,
+        },
+        "lineage": {
+            "columns": lineage_dict,
+            "summary": lineage_agg,
         },
     }
 
