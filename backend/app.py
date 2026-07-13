@@ -31,6 +31,8 @@ from ai.filter_trigger import FilterTrigger
 from utils.data_serializer import DataSerializer
 from ai.hallucination_guard import HallucinationGuard
 from ai.prompts import QA_SYSTEM as _QA_BASE  # legacy import (kept for back-compat)
+from ai.dashboard_export import export_dashboard
+from ai.pbix_real_export import build_pbix as build_real_pbix
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DataLensAI")
@@ -95,7 +97,51 @@ def _serialize_response(obj):
 # ── Health ──────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET", "HEAD"])
 def root():
-    return jsonify({"status": "ok", "service": "DataLens AI", "version": "2.0.0-ollama"}), 200
+    """Root: redirect to dashboard."""
+    from flask import redirect
+    return redirect("/dashboard", code=302)
+
+
+@app.route("/preview", methods=["GET"])
+def preview_page():
+    """Design preview / status page showing what's being built."""
+    from flask import send_from_directory
+    return send_from_directory("static", "preview.html")
+
+
+@app.route("/test", methods=["GET"])
+def test_console():
+    """Browser test console — see the full pipeline in action."""
+    from flask import send_from_directory
+    return send_from_directory("static", "test.html")
+
+
+@app.route("/dashboard-figma", methods=["GET"])
+def dashboard_figma():
+    """New dashboard matching Figma 'Analytics Dashboard Community' style."""
+    from flask import send_from_directory
+    return send_from_directory("static", "dashboard-figma.html")
+
+
+@app.route("/dashboard", methods=["GET"])
+def dashboard_old():
+    """Original dark dashboard (legacy)."""
+    from flask import send_from_directory
+    return send_from_directory("static", "dashboard.html")
+
+
+@app.route("/dashboard-light", methods=["GET"])
+def dashboard_light():
+    """Sneat-style light dashboard (subagent built)."""
+    from flask import send_from_directory
+    return send_from_directory("static", "dashboard-light.html")
+
+
+@app.route("/", methods=["GET", "HEAD"])
+def root_index():
+    """Root redirects to /dashboard."""
+    from flask import redirect
+    return redirect("/dashboard")
 
 
 @app.route("/health", methods=["GET"])
@@ -304,6 +350,228 @@ async def _collect_stream(gen):
     return tokens
 
 
+# ── /api/filter — re-render KPIs/charts/anomalies for a filtered subset ─────
+@app.route("/api/filter", methods=["POST"])
+def filter_session():
+    """
+    Apply user-selected filters to the stored records and re-derive
+    KPIs, charts, and anomaly counts. NO LLM call (fast, <500ms).
+
+    Body: {"session_id": "...", "filters": {"region": "APAC", "category": "X"}}
+    Returns: {charts, anomalies, stats, total_rows, filtered_rows}
+    """
+    body = request.get_json(force=True) or {}
+    session_id = body.get("session_id")
+    filters = body.get("filters", {}) or {}
+    if not session_id:
+        return jsonify({"success": False, "error": "Missing session_id"}), 400
+    session = session_store.get(session_id)
+    if not session:
+        return jsonify({"success": False, "error": "Session not found"}), 404
+
+    records = session.get("records", [])
+    if not records:
+        return jsonify({"success": False, "error": "No records in session"}), 400
+
+    # Apply filters
+    filtered = records
+    for col, val in filters.items():
+        if val is None or val == "" or val == "All":
+            continue
+        filtered = [r for r in filtered if str(r.get(col, "")) == str(val)]
+
+    # Re-derive KPIs/charts/anomalies from filtered subset (no LLM)
+    try:
+        import pandas as pd
+        df = pd.DataFrame(filtered)
+        if df.empty:
+            return jsonify({
+                "success": True,
+                "charts": [],
+                "anomalies": [],
+                "stats": {"total_rows": len(records), "filtered_rows": 0},
+                "filters": filters,
+            })
+
+        from ai.smart_viz_selector import SmartVizSelector
+        from ai.dataset_classifier import DatasetClassifier
+        from ai.anomaly_detector import AnomalyDetector
+        from ai.analytical_engine import AnalyticalEngine
+        from parsers.base_parser import DataProfile
+        from utils.data_serializer import DataSerializer
+
+        # Classify the filtered subset
+        meta = DatasetClassifier().classify(df, None)
+        # Build a full DataProfile that all downstream code can use
+        column_types = {c: ("datetime" if df[c].dtype.kind == 'M' else
+                            "numeric" if df[c].dtype.kind in ('i','f') else
+                            "categorical") for c in df.columns}
+        text_content = " | ".join(
+            f"{c}={df[c].iloc[0]}" for c in df.columns[:5]
+        ) if not df.empty else ""
+        profile = DataProfile(
+            df=df, source_type="filtered", file_name="filtered",
+            rows=len(df), cols=df.shape[1], columns=list(df.columns),
+            dtypes={c: str(df[c].dtype) for c in df.columns},
+            nulls={c: int(df[c].isna().sum()) for c in df.columns},
+            null_pct={c: float(df[c].isna().mean() * 100) for c in df.columns},
+            duplicates=int(df.duplicated().sum()),
+            numeric_summary={c: {} for c in df.columns if df[c].dtype.kind in ('i','f')},
+            sample=df.head(5).to_dict(orient="records") if not df.empty else [],
+            text_content=text_content,
+            column_types=column_types,
+            has_datetime=any(df[c].dtype.kind == 'M' for c in df.columns),
+            has_numeric=any(df[c].dtype.kind in ('i','f') for c in df.columns),
+            kpi_columns=meta.kpi_columns if hasattr(meta, "kpi_columns") else [],
+            processing_time=0.0,
+            warnings=[],
+        )
+        findings = AnalyticalEngine().analyze(df, meta, profile)
+        charts = SmartVizSelector().select_charts(df, meta, findings)
+        anomalies = AnomalyDetector().detect(profile, ollama_client=None)
+
+        # Serialize
+        chart_dicts = [dict(c.__dict__) if hasattr(c, "__dict__") else c for c in charts]
+        anomaly_dicts = [a.__dict__ if hasattr(a, "__dict__") else a for a in anomalies]
+
+        return jsonify({
+            "success": True,
+            "charts": chart_dicts,
+            "anomalies": anomaly_dicts,
+            "stats": {
+                "total_rows": len(records),
+                "filtered_rows": len(filtered),
+                "filter_pct": round(len(filtered) / max(len(records), 1) * 100, 1),
+            },
+            "filters": filters,
+        })
+    except Exception as e:
+        logger.error(f"Filter error: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── /api/drilldown — return the actual rows behind a chart bar/data point ────
+@app.route("/api/drilldown", methods=["POST"])
+def drilldown():
+    """
+    Return the raw records matching a chart's category + value range.
+    Used when user clicks a bar in a chart.
+
+    Body: {
+        "session_id": "...",
+        "column": "region",         # x-axis column
+        "value": "APAC",            # clicked value
+        "value_column": "revenue",  # y-axis column (optional, for context)
+        "filters": {...},           # active cross-filters
+        "limit": 50
+    }
+    Returns: {"rows": [...], "total": 42, "column": "region", "value": "APAC"}
+    """
+    body = request.get_json(force=True) or {}
+    session_id = body.get("session_id")
+    column = body.get("column")
+    value = body.get("value")
+    filters = body.get("filters", {}) or {}
+    limit = min(int(body.get("limit", 50)), 500)
+
+    if not session_id or column is None:
+        return jsonify({"success": False, "error": "Missing session_id or column"}), 400
+    session = session_store.get(session_id)
+    if not session:
+        return jsonify({"success": False, "error": "Session not found"}), 404
+
+    records = session.get("records", [])
+    if not records:
+        return jsonify({"success": False, "error": "No records in session"}), 400
+
+    # Apply cross-filters first
+    filtered = records
+    for col, val in filters.items():
+        if val is None or val == "" or val == "All" or col == column:
+            continue
+        filtered = [r for r in filtered if str(r.get(col, "")) == str(val)]
+
+    # Then filter to clicked value
+    matching = [r for r in filtered if str(r.get(column, "")) == str(value)]
+
+    # Add a row number
+    rows = []
+    for i, r in enumerate(matching[:limit], 1):
+        row = {"#": i}
+        row.update(r)
+        rows.append(row)
+
+    return jsonify({
+        "success": True,
+        "column": column,
+        "value": str(value),
+        "total": len(matching),
+        "shown": len(rows),
+        "rows": rows,
+        "columns": list(matching[0].keys()) if matching else [],
+    })
+
+
+# ── /api/export/dashboard — downloadable standalone HTML dashboard ZIP ──────
+@app.route("/api/export/dashboard", methods=["POST", "GET"])
+def export_dashboard_zip():
+    """Download the entire dashboard as a self-contained HTML ZIP file."""
+    session_id = (request.args.get("session_id") or
+                  (request.get_json(silent=True) or {}).get("session_id") or
+                  (request.form.get("session_id") if request.form else None))
+    if not session_id:
+        return jsonify({"success": False, "error": "Missing session_id"}), 400
+    session = session_store.get(session_id)
+    if not session:
+        return jsonify({"success": False, "error": "Session not found"}), 404
+    try:
+        zip_bytes = export_dashboard(session, session_id)
+        from flask import Response
+        return Response(
+            zip_bytes,
+            mimetype="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=datalens-dashboard-{session_id[:8]}.zip",
+                "Content-Length": str(len(zip_bytes)),
+            },
+        )
+    except Exception as e:
+        logger.error(f"Dashboard export failed: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── /api/export/pbix — real PowerBI .pbit via pbi-tools ─────────────────────
+@app.route("/api/export/pbix", methods=["GET", "POST"])
+def export_pbix_real():
+    """
+    Download a real PowerBI .pbit file that opens in PowerBI Desktop
+    with editable DAX, data model, and visuals.
+
+    Built using pbi-tools (pbi.tools) — a .NET CLI for offline PBIX manipulation.
+    """
+    session_id = (request.args.get("session_id") or
+                  (request.get_json(silent=True) or {}).get("session_id"))
+    if not session_id:
+        return jsonify({"success": False, "error": "Missing session_id"}), 400
+    session = session_store.get(session_id)
+    if not session:
+        return jsonify({"success": False, "error": "Session not found"}), 404
+    if not session.get("records"):
+        return jsonify({"success": False, "error": "No records in session"}), 400
+    try:
+        pbix_path = build_real_pbix(session, session_id)
+        from flask import send_file
+        return send_file(
+            pbix_path,
+            mimetype="application/octet-stream",
+            as_attachment=True,
+            download_name=f"datalens-dashboard-{session_id[:8]}.pbit"
+        )
+    except Exception as e:
+        logger.error(f"PBIX export failed: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ── /api/ask/sync — non-streaming fallback (for testing) ────────────────────
 @app.route("/api/ask/sync", methods=["POST"])
 def ask_sync():
@@ -367,6 +635,10 @@ def get_dataset(session_id):
         "anomalies": session.get("anomalies", []),
         "warnings": session.get("warnings", []),
         "metadata": session.get("metadata", {}),
+        # NEW: for slicers + drill-down
+        "records": session.get("records", []),
+        "records_columns": session.get("records_columns", []),
+        "filterable_columns": session.get("filterable_columns", []),
     }))
 
 

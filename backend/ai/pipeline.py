@@ -9,6 +9,7 @@ Fixes:
 """
 import time
 import asyncio
+import json
 import logging
 from typing import Any, Dict, List
 from parsers.base_parser import DataProfile
@@ -173,6 +174,41 @@ class AnalysisPipeline:
             else:
                 findings_dicts.append({"statement": str(f)})
 
+        # ── NEW: serialize full sample records (for filters + drill-down) ──
+        # Cap at 5000 rows for session storage. Frontend uses these to re-render
+        # KPIs/charts when slicers change, and to show drill-down modals.
+        try:
+            # Make a JSON-safe copy of the dataframe (no Timestamp, no numpy, etc.)
+            df_safe = df.head(5000).copy()
+            for col in df_safe.columns:
+                if df_safe[col].dtype.kind in ('M',):  # datetime
+                    df_safe[col] = df_safe[col].astype(str)
+                elif df_safe[col].dtype.kind in ('i', 'f'):
+                    df_safe[col] = df_safe[col].astype(object).where(df_safe[col].notna(), None)
+            records = json.loads(json.dumps(df_safe.to_dict(orient="records"), default=str))
+            records_columns = list(df.columns)
+        except Exception as e:
+            logger.warning(f"Could not serialize records: {e}")
+            records = []
+            records_columns = []
+
+        # ── NEW: identify filterable columns (categorical, low cardinality) ──
+        filterable = []
+        for col in records_columns:
+            try:
+                nunique = df[col].nunique(dropna=True)
+                if 2 <= nunique <= 50:  # sweet spot for slicers
+                    unique_vals = df[col].dropna().unique().tolist()[:50]
+                    # convert to JSON-safe
+                    unique_vals = [str(v) if not isinstance(v, (int, float, bool, str)) else v for v in unique_vals]
+                    filterable.append({
+                        "column": col,
+                        "unique_count": nunique,
+                        "values": unique_vals,
+                    })
+            except Exception:
+                pass
+
         return {
             # Legacy keys (zero regression)
             "executive_summary": exec_summary,
@@ -192,6 +228,10 @@ class AnalysisPipeline:
                 "analyzed_rows": profile.rows,
                 "llm_enabled": self.ollama is not None,
             },
+            # NEW: raw records for client-side filtering + drill-down
+            "records": records,
+            "records_columns": records_columns,
+            "filterable_columns": filterable,
         }
 
     # ── Helpers ─────────────────────────────────────────────────────────────

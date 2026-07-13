@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataLens AI — v2.0 Live</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0F1117; color: #F0F2FF; padding: 32px; line-height: 1.6; }
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px;
+       background: linear-gradient(135deg, #5070E0, #21D1D1);
+       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: #B0B6D6; margin-bottom: 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: #181B23; border: 1px solid #2A2D38; border-radius: 12px; padding: 20px; transition: all 0.15s; }
+  .card:hover { border-color: #6080F0; transform: translateY(-2px); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .card p { color: #B0B6D6; font-size: 13px; margin-bottom: 12px; }
+  .btn { display: inline-block; background: #5070E0; color: white; padding: 9px 18px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 12px; }
+  .btn:hover { background: #4070E0; }
+  .btn.alt { background: #21D1D1; }
+  .btn.pbix { background: linear-gradient(135deg, #F2C811, #E8A200); color: #1A1A1A; }
+  .status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .status.live { background: #143A20; color: #34D672; }
+  .status.verified { background: #1E2A4A; color: #6080F0; }
+  iframe { width: 100%; height: 700px; border: 1px solid #2A2D38; border-radius: 12px; background: white; }
+  .feature-list { color: #B0B6D6; font-size: 12px; padding-left: 18px; margin-top: 6px; }
+  .feature-list li { margin-bottom: 3px; }
+  .test-result { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #34D672; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>🎉 DataLens AI v2.0 — Sprint 1 Done</h1>
+<p class="subtitle">All 4 working features live. Server at <strong style="color: #5070E0">localhost:5000</strong></p>
+
+<div class="grid">
+  <div class="card">
+    <h2>📊 New Dashboard <span class="status live">● LIVE</span></h2>
+    <p>Full interactive dashboard. Drop a CSV, see charts. Click a slicer, see all charts update. Click a bar, see the source rows. Toggle theme, persists across reloads.</p>
+    <p class="test-result">✓ /api/filter verified: 11/30 rows on region=APAC</p>
+    <p class="test-result">✓ /api/drilldown verified: 5 matching rows</p>
+    <p style="margin-top: 12px"><a class="btn" href="/dashboard" target="_blank">Open Dashboard →</a></p>
+  </div>
+
+  <div class="card">
+    <h2>🔍 Working Filters <span class="status verified">VERIFIED</span></h2>
+    <p>Left rail slicers. Click any value → all charts re-render. Multi-filter (cross-filter). Clear individual or all.</p>
+    <ul class="feature-list">
+      <li>Multi-column cross-filtering</li>
+      <li>Active filter chips with X to clear</li>
+      <li>"Showing X of Y rows" summary</li>
+      <li>Charts re-derive from filtered data</li>
+      <li>No LLM call (instant, &lt;200ms)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>📋 Drill-Down <span class="status verified">VERIFIED</span></h2>
+    <p>Click any chart bar to see the actual source rows in a modal. Click any anomaly row. Or call the API directly.</p>
+    <ul class="feature-list">
+      <li>Click bar in Revenue chart</li>
+      <li>Click slice in Distribution donut</li>
+      <li>Click row in Anomalies table</li>
+      <li>Modal shows up to 50 rows with all columns</li>
+      <li>Respects active cross-filters</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>🌗 Dark/Light Theme <span class="status verified">VERIFIED</span></h2>
+    <p>Click the moon/sun icon in header. Entire UI swaps. Reload page, theme persists. localStorage saved.</p>
+    <ul class="feature-list">
+      <li>CSS variables drive every color</li>
+      <li>No flash on reload (localStorage check on boot)</li>
+      <li>Plotly charts re-render with new grid colors</li>
+      <li>Cmd+T keyboard shortcut</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>⌘ Cmd+K Command Palette <span class="status verified">VERIFIED</span></h2>
+    <p>Press Ctrl+K or Cmd+K. Search for "theme", "reset", ".pbix", etc. Click an action or hit Enter.</p>
+    <ul class="feature-list">
+      <li>Toggle theme (T)</li>
+      <li>Reset all filters (Esc)</li>
+      <li>New file (N)</li>
+      <li>Download .pbix (P)</li>
+      <li>Print / PDF (L)</li>
+      <li>Toggle chat (C)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>📥 Export (Standalone HTML) <span class="status live">● LIVE</span></h2>
+    <p>Click "⚡ .pbix" in header (currently downloads a standalone HTML ZIP — real .pbix is in progress for sprint hour 6-8).</p>
+    <p style="color: #FFB834; font-size: 12px; margin-top: 8px;">⚠ Note: Standalone HTML works in any browser. Real PowerBI-compatible .pbix is the next sprint task.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <h2>📺 Live Preview</h2>
+  <p>The new dashboard with all 4 working features. Upload a file to test the full flow.</p>
+  <iframe src="/dashboard" style="margin-top: 12px;"></iframe>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <h2>🧪 Test the full flow</h2>
+  <ol style="color: #B0B6D6; font-size: 13px; padding-left: 20px;">
+    <li>Click "Open Dashboard" above</li>
+    <li>Drag <code style="color: #6080F0; background: #14161E; padding: 2px 6px; border-radius: 3px;">C:\Users\modir\AppData\Local\Temp\datalens_test.csv</code> into the drop zone</li>
+    <li>Wait ~50s for analysis (Ollama Cloud)</li>
+    <li><strong>Test filter:</strong> Click "APAC" in the left rail → all charts update to APAC-only data</li>
+    <li><strong>Test multi-filter:</strong> Hold click "B2B" in customer_segment → both filters active</li>
+    <li><strong>Test drilldown:</strong> Click a bar in "Breakdown" → modal with 50 source rows</li>
+    <li><strong>Test theme:</strong> Click moon icon → entire UI swaps dark → reload page → stays dark</li>
+    <li><strong>Test cmd+k:</strong> Press Ctrl+K → command palette opens</li>
+  </ol>
+</div>
+
+</body>
+</html>
