@@ -193,6 +193,40 @@ def _value_overlap_pct(series_a: pd.Series, series_b: pd.Series, sample: int = V
     return len(a_vals & b_vals) / len(a_vals)
 
 
+def _infer_cardinality(series_a: pd.Series, series_b: pd.Series, a_is_pk: bool, b_is_pk: bool) -> str:
+    """Infer cardinality from actual data, not just PK status.
+
+    Logic:
+    - 1:1 if A has no duplicates AND B has no duplicates (one-to-one mapping)
+    - M:1 if A has duplicates but B has none (A is "many", B is "one")
+    - M:N if both have duplicates (junction table scenario)
+    - 1:M if A has none but B has duplicates (1 to many, opposite of M:1)
+
+    Note: returns the relationship FROM A's perspective TO B's perspective.
+    Caller is responsible for flipping if needed.
+    """
+    # Sample for speed
+    a_sample = series_a.dropna().head(VALUE_OVERLAP_SAMPLE)
+    b_sample = series_b.dropna().head(VALUE_OVERLAP_SAMPLE)
+    if len(a_sample) == 0 or len(b_sample) == 0:
+        return "many_to_one"  # default fallback
+
+    a_unique_ratio = a_sample.nunique() / len(a_sample)
+    b_unique_ratio = b_sample.nunique() / len(b_sample)
+
+    a_has_dups = a_unique_ratio < 0.99
+    b_has_dups = b_unique_ratio < 0.99
+
+    if not a_has_dups and not b_has_dups:
+        return "one_to_one"
+    elif a_has_dups and not b_has_dups:
+        return "many_to_one"  # A is many, B is one
+    elif not a_has_dups and b_has_dups:
+        return "one_to_many"  # A is one, B is many
+    else:
+        return "many_to_many"  # both have dups (junction table)
+
+
 def detect_relationships(
     file_profiles: Dict[str, FileProfile],
     dataframes: Dict[str, pd.DataFrame],
@@ -252,17 +286,21 @@ def detect_relationships(
                     if overlap < 0.5:
                         continue
 
-                    # Determine direction: FK side is the one with lower uniqueness
+                    # Determine direction and VERIFY cardinality
+                    # (M:1 vs M:N vs 1:1) based on actual data
+                    cardinality = _infer_cardinality(
+                        df_a[col_a], df_b[col_b], a_is_pk, b_is_pk
+                    )
                     if a_is_pk and not b_is_pk:
                         from_file, from_col, to_file, to_col = name_b, col_b, name_a, col_a
-                        rel_type = "many_to_one"
+                        rel_type = cardinality
                     elif b_is_pk and not a_is_pk:
                         from_file, from_col, to_file, to_col = name_a, col_a, name_b, col_b
-                        rel_type = "many_to_one"
+                        rel_type = cardinality
                     else:
-                        # Both PK candidates — one_to_one
+                        # Both PK candidates — one_to_one by default
                         from_file, from_col, to_file, to_col = name_a, col_a, name_b, col_b
-                        rel_type = "one_to_one"
+                        rel_type = cardinality if cardinality != "many_to_many" else "one_to_one"
 
                     # Confidence = name_match (0.4) + value_overlap (0.6 * overlap)
                     confidence = 0.4 + 0.6 * overlap

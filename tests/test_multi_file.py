@@ -126,8 +126,43 @@ assert result.get('success')
 assert len(result.get('relationships', [])) >= 1, "Should detect customers-orders relationship"
 
 # ════════════════════════════════════════════════════════
-# Test 5: Edge cases
+# Test 4b: Cardinality inference (Sprint 5)
 # ════════════════════════════════════════════════════════
+
+print("\n" + "="*70)
+print("Test 4b: Cardinality inference")
+print("="*70)
+from ai.multi_file import _infer_cardinality
+
+# 1:1: A has unique values, B has unique values
+a = pd.Series([1, 2, 3, 4, 5])
+b = pd.Series([10, 20, 30, 40, 50])  # all unique
+card = _infer_cardinality(a, b, True, True)
+print(f"  1:1 test (both unique): {card}")
+assert card == "one_to_one"
+
+# M:1: A has dups, B is unique
+a = pd.Series([1, 1, 2, 2, 3])
+b = pd.Series([10, 20, 30, 40, 50])  # unique
+card = _infer_cardinality(a, b, False, True)
+print(f"  M:1 test (A dups, B unique): {card}")
+assert card == "many_to_one"
+
+# 1:M: A is unique, B has dups
+a = pd.Series([1, 2, 3, 4, 5])  # unique
+b = pd.Series([10, 10, 20, 20, 30])  # dups
+card = _infer_cardinality(a, b, True, False)
+print(f"  1:M test (A unique, B dups): {card}")
+assert card == "one_to_many"
+
+# M:N: Both have dups
+a = pd.Series([1, 1, 2, 2, 3])
+b = pd.Series([10, 10, 20, 30, 30])
+card = _infer_cardinality(a, b, False, False)
+print(f"  M:N test (both dups): {card}")
+assert card == "many_to_many"
+
+print("  All cardinality tests passed!")
 
 print("\n" + "="*70)
 print("TEST 5: Edge cases")
