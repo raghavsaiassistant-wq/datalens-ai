@@ -5,7 +5,7 @@ L3 is now handled by grounded_insight.py (sole writer to result["insights"]).
 """
 import json
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 from ai.prompts import ANALYST_SYSTEM
 from ai.ollama_client import OllamaClient
 
@@ -64,7 +64,6 @@ Output the JSON with EXACTLY 5 L1 facts and matching L2 causes."""
     @staticmethod
     def _extract_json(text: str) -> dict:
         """Extract JSON from text that may be wrapped in ```json ... ``` fences."""
-        import json
         import re
         # Try direct parse
         try:

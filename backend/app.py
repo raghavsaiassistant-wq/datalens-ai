@@ -14,8 +14,6 @@ import asyncio
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import pandas as pd
-import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flask_limiter import Limiter
@@ -24,16 +22,12 @@ from flask_limiter.util import get_remote_address
 from utils.file_router import FileRouter
 from ai.pipeline import AnalysisPipeline
 from ai.ollama_client import OllamaClient
-from ai.prompts import QA_SYSTEM
 from utils.session_store import SessionStore
 from utils.job_store import JobStore
-from ai.date_intelligence import DateIntelligence
-from ai.filter_trigger import FilterTrigger
 from utils.data_serializer import DataSerializer
-from ai.hallucination_guard import HallucinationGuard
-from ai.prompts import QA_SYSTEM as _QA_BASE  # legacy import (kept for back-compat)
 from ai.dashboard_export import export_dashboard
 from ai.pbix_real_export import build_pbix as build_real_pbix
+from ai.multi_file import run_multi_file_pipeline, get_unified_dataframe_from_result
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DataLensAI")
@@ -227,9 +221,9 @@ def analyze():
     job_store.create(job_id, file.filename)
 
     def run_analysis():
+        from parsers.csv_parser import CSVParser
         import asyncio
         async def _run():
-            from parsers.csv_parser import CSVParser
             parser = CSVParser()
             try:
                 job_store.update(job_id, status="processing", progress=1, message="📂 Parsing file...")
@@ -246,8 +240,10 @@ def analyze():
                 logger.error(f"Analysis failed for {job_id}: {e}", exc_info=True)
                 job_store.update(job_id, status="failed", error=str(e))
             finally:
-                try: os.remove(file_path)
-                except: pass
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
         asyncio.run(_run())
 
     t = threading.Thread(target=run_analysis, daemon=True)
@@ -399,7 +395,6 @@ def filter_session():
         from ai.anomaly_detector import AnomalyDetector
         from ai.analytical_engine import AnalyticalEngine
         from parsers.base_parser import DataProfile
-        from utils.data_serializer import DataSerializer
 
         # Classify the filtered subset
         meta = DatasetClassifier().classify(df, None)
@@ -585,7 +580,6 @@ def ask_sync():
     # Build context from session (same as streaming ask)
     insights = session.get("insights", {})
     charts = session.get("charts", [])
-    warnings = session.get("warnings", [])
     meta = session.get("dataset_meta", {})
     context_lines = [
         f"Dataset type: {meta.get('dataset_type', 'general') if isinstance(meta, dict) else getattr(meta, 'dataset_type', 'general')}",
@@ -650,10 +644,6 @@ def get_dataset(session_id):
 # MVP scope: synchronous, in-memory, 100K row cap, simple FK detection.
 # ════════════════════════════════════════════════════════════════════════════
 
-from ai.multi_file import run_multi_file_pipeline, get_unified_dataframe_from_result
-from parsers.csv_parser import CSVParser
-from utils.data_serializer import DataSerializer
-
 
 @app.route("/api/analyze/multi", methods=["POST"])
 @limiter.limit("3 per minute")
@@ -713,7 +703,6 @@ def analyze_multi():
                 return
 
             # Adapt unified DF to DataProfile format (use DataProfiler)
-            from parsers.base_parser import DataProfile
             from utils.data_profiler import DataProfiler
             import time
             t0 = time.time()
@@ -992,7 +981,7 @@ def rate_limited(e):
 @app.route("/api/multi/health", methods=["GET"])
 def multi_health():
     """Health check with circuit breaker status (Sprint 12)."""
-    from ai.hardening import ollama_breaker, health_check
+    from ai.hardening import health_check
     h = health_check()
     return jsonify({
         "success": True,

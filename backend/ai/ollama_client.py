@@ -12,11 +12,10 @@ Endpoints:
 No embeddings on cloud. Local Ollama at localhost:11434 for nomic-embed-text.
 """
 import os
-import time
 import json
 import logging
 import asyncio
-from typing import AsyncIterator, Dict, Any, Optional, List
+from typing import AsyncIterator, Dict, Optional, List
 import httpx
 from dotenv import load_dotenv
 
@@ -89,8 +88,10 @@ class OllamaClient:
             current_loop = None
         if self._client is None or self._client_loop is not current_loop:
             if self._client is not None:
-                try: await self._client.aclose()
-                except: pass
+                try:
+                    await self._client.aclose()
+                except Exception:
+                    pass
             self._client = httpx.AsyncClient(
                 base_url=BASE_URL,
                 headers={
@@ -104,8 +105,10 @@ class OllamaClient:
 
     async def aclose(self):
         if self._client is not None:
-            try: await self._client.aclose()
-            except: pass
+            try:
+                await self._client.aclose()
+            except Exception:
+                pass
             self._client = None
             self._client_loop = None
 
@@ -293,7 +296,6 @@ def stream_sync(role: str, messages: List[Dict[str, str]], **kwargs) -> AsyncIte
 
 # ── CLI smoke test ───────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    import sys
     async def _test():
         client = OllamaClient()
         if not await client.health():

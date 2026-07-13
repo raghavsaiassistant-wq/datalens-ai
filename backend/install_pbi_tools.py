@@ -8,7 +8,6 @@ import os
 import sys
 import urllib.request
 import zipfile
-import shutil
 
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 PBI_TOOLS_DIR = os.path.join(BACKEND_DIR, "pbi-tools")

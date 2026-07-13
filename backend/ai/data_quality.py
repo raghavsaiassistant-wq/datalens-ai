@@ -13,7 +13,7 @@ Returns a report that can be added to the multi-file metadata.
 """
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 
 def check_data_quality(file_name: str, df: pd.DataFrame) -> Dict[str, Any]:

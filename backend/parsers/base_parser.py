@@ -5,7 +5,7 @@ Defines the DataProfile schema and the BaseParser interface for all data parsers
 """
 from dataclasses import dataclass
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List
 import chardet
 from pathlib import Path
 

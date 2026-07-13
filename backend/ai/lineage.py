@@ -7,7 +7,7 @@ and source column it came from. Enables:
 - "What happens if I change source X?" impact analysis
 - Trust/explainability for AI insights
 """
-from typing import Dict, List, Any
+from typing import Dict, List
 from dataclasses import dataclass, asdict
 
 
@@ -54,7 +54,7 @@ def build_lineage(
         from_f = rel["from_file"]
         to_f = rel["to_file"]
         from_c = rel["from_column"]
-        to_c = rel["to_column"]
+        # (to_c dropped — unused after the dict-only refactor)
         # The FK side gets "join_key" tag
         if from_c in file_columns.get(from_f, []):
             lineages[f"{from_f}_{from_c}" if _needs_prefix(from_c, file_names, file_columns) else from_c] = ColumnLineage(
@@ -79,11 +79,11 @@ def _needs_prefix(col_name: str, file_names: List[str], file_columns: Dict[str, 
 
 def lineage_summary(lineages: Dict[str, dict], relationships: List[dict]) -> dict:
     """High-level summary of lineage for display."""
-    passthrough = sum(1 for l in lineages.values() if l["transformation"] == "passthrough")
-    join_keys = sum(1 for l in lineages.values() if l["transformation"] == "join_key")
+    passthrough = sum(1 for lin in lineages.values() if lin["transformation"] == "passthrough")
+    join_keys = sum(1 for lin in lineages.values() if lin["transformation"] == "join_key")
 
     # Count source files
-    source_files = set(l["source_file"] for l in lineages.values())
+    source_files = set(lin["source_file"] for lin in lineages.values())
 
     return {
         "total_columns": len(lineages),

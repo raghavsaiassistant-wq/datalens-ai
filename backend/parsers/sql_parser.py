@@ -31,8 +31,9 @@ class SQLParser(BaseParser):
         safe_statements = []
         for stmt in statements:
             stmt_clean = stmt.strip().upper()
-            if not stmt_clean: continue
-            
+            if not stmt_clean:
+                continue
+
             if any(danger in stmt_clean for danger in ["DROP ", "DELETE ", "TRUNCATE ", "UPDATE ", "ALTER ", "SQLITE_MASTER", "SQLITE_TEMP_MASTER"]):
                 warnings.append("Skipped potentially dangerous statement or system table reference")
                 continue

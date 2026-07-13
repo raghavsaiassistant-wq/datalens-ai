@@ -5,7 +5,7 @@ Recommends optimal charts using pure Python heuristic logic.
 Assesses cardinality, datatype and numeric correlation.
 """
 from dataclasses import dataclass
-from typing import List, Optional, Any
+from typing import List, Optional
 import pandas as pd
 import numpy as np
 from parsers.base_parser import DataProfile

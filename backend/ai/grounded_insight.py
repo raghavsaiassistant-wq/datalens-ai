@@ -6,7 +6,7 @@ Uses gpt-oss-120b-cloud (reasoner role) for board-level narrative.
 import json
 import re
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 from ai.prompts import CSO_SYSTEM
 from ai.ollama_client import OllamaClient
 
@@ -95,7 +95,6 @@ Return the full JSON (executive_summary, key_findings, next_steps, l3_insights).
     @staticmethod
     def _extract_json(text: str) -> dict:
         """Extract JSON from text that may be wrapped in ```json ... ``` fences."""
-        import json
         # Try direct parse
         try:
             return json.loads(text)

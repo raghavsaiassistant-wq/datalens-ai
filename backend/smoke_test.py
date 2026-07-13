@@ -17,7 +17,6 @@ Tests:
 import sys
 import os
 import time
-import json
 import requests
 import tempfile
 
@@ -26,8 +25,7 @@ SAMPLE_CSV = r"C:\Users\modir\AppData\Local\Temp\datalens_test.csv"
 
 # Recreate sample if missing
 if not os.path.exists(SAMPLE_CSV):
-    print(f"Sample CSV missing, regenerating...")
-    import shutil
+    print("Sample CSV missing, regenerating...")
     sample = '''date,region,product_category,customer_segment,revenue,units_sold
 2025-01-15,APAC,Electronics,B2B,8200,45
 2025-02-20,APAC,Clothing,B2C,5400,80

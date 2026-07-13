@@ -8,12 +8,11 @@ Fixes:
   Bug #8: No more duplicate health-score formula.
 """
 import time
-import asyncio
 import json
 import logging
 from typing import Any, Dict, List
 from parsers.base_parser import DataProfile
-from ai.anomaly_detector import AnomalyDetector, AnomalyFlag
+from ai.anomaly_detector import AnomalyDetector
 from ai.dataset_classifier import DatasetClassifier
 from ai.analytical_engine import AnalyticalEngine
 from ai.smart_viz_selector import SmartVizSelector

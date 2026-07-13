@@ -9,9 +9,7 @@ Saves:
 
 Survives server restart.
 """
-import os
 import json
-import pickle
 import time
 import hashlib
 import logging
@@ -54,8 +52,8 @@ class MultiFileStore:
             # Sanitize filename
             safe = name.replace("/", "_").replace("\\", "_")
             (files_dir / safe).write_bytes(content)
-            # Hash for dedup
-            file_hashes[name] = hashlib.md5(content).hexdigest()[:12]
+            # Hash for dedup (SHA-256, not MD5)
+            file_hashes[name] = hashlib.sha256(content).hexdigest()[:12]
 
         # 2. Save metadata
         meta = {

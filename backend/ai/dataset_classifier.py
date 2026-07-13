@@ -5,12 +5,10 @@ Understands WHAT a dataset is before any analysis runs.
 Assigns roles to every column and detects the dataset type.
 Pure Python + pandas — no NIM calls, max 1 second.
 """
-import re
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 import pandas as pd
-import numpy as np
 
 logger = logging.getLogger("DatasetClassifier")
 
@@ -357,7 +355,6 @@ class DatasetClassifier:
     def _build_description(self, df, dataset_type, profile, primary_dim,
                            primary_measure, n_locations, n_variants, n_periods, roles) -> str:
         rows = len(df)
-        file = getattr(profile, "file_name", "dataset")
 
         if dataset_type == "experiment":
             dim_label = primary_dim or "variants"

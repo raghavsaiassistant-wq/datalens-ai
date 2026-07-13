@@ -5,6 +5,8 @@ Generates a comprehensive statistical profile from a raw Pandas DataFrame.
 """
 import pandas as pd
 import json
+from parsers.base_parser import DataProfile
+
 
 class DataProfiler:
     """Stateless profiler that computes metrics and schemas for datasets."""
@@ -14,8 +16,7 @@ class DataProfiler:
         """
         Computes all profiling metrics for a given DataFrame step-by-step.
         """
-        from parsers.base_parser import DataProfile
-        
+
         # STEP 1: Basic shape
         rows, cols = df.shape
         columns = df.columns.tolist()

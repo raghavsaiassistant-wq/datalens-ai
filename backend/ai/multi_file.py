@@ -18,9 +18,7 @@ NOT production-grade:
 - Synchronous (no streaming)
 """
 from __future__ import annotations
-import os
 import re
-import uuid
 import logging
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, field, asdict
@@ -256,7 +254,6 @@ def detect_relationships(
 
             for col_a in prof_a.columns:
                 norm_a = _normalize_col_name(col_a)
-                prof_a_cols_norm = {c: _normalize_col_name(c) for c in prof_a.columns}
 
                 for col_b in prof_b.columns:
                     norm_b = _normalize_col_name(col_b)
@@ -604,8 +601,8 @@ def get_unified_dataframe_from_result(result: Dict[str, Any], files: List[Tuple[
                 dataframes[file_id] = pd.read_csv(BytesIO(content))
             elif file_name.lower().endswith(('.xlsx', '.xls')):
                 dataframes[file_id] = pd.read_excel(BytesIO(content))
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to parse {file_name}: {e}")
 
     if not dataframes:
         return None

@@ -10,7 +10,7 @@ import logging
 import threading
 from typing import Optional, Dict, Any, Callable
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger("datalens.hardening")
 
@@ -47,7 +47,7 @@ class CircuitBreaker:
                     self.failures = 0
                     logger.info("Circuit breaker: closed (recovered)")
             return result
-        except Exception as e:
+        except Exception:
             with self._lock:
                 self.failures += 1
                 self.last_failure_time = time.time()

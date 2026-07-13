@@ -33,7 +33,7 @@ def _ensure_sample() -> str:
     zip_path = os.path.join(BACKEND_DIR, "pbi-tools-master.zip")
     if os.path.exists(zip_path):
         os.remove(zip_path)
-    logger.info(f"Downloading pbi-tools repo to get sample PbixProj...")
+    logger.info("Downloading pbi-tools repo to get sample PbixProj...")
     req = urllib.request.Request(SAMPLE_REPO_URL, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=120) as r:
         zip_data = r.read()
@@ -53,7 +53,7 @@ def _ensure_sample() -> str:
                     prefix = n.split(f"/data/Samples/{SAMPLE_DIR_NAME}/", 1)[0] + f"/data/Samples/{SAMPLE_DIR_NAME}/"
                     break
         if not prefix:
-            raise RuntimeError(f"Could not find calc-groups folder")
+            raise RuntimeError("Could not find calc-groups folder")
         logger.info(f"Using prefix: {prefix}")
         for name in names:
             if name.startswith(prefix) and not name.endswith("/"):
@@ -220,7 +220,6 @@ def _rewrite_model(workdir, table_name, columns, records, analysis_result):
     numeric_cols = [c["name"] for c in col_defs if c["dataType"] in ("int64", "double")]
     measures = []
     for col in numeric_cols[:5]:
-        safe = col.replace("'", "''")
         measures.extend([
             {"name": f"Total {col}", "expression": f"SUM('{table_name}'[{col}])", "formatString": "#,0.00"},
             {"name": f"Avg {col}", "expression": f"AVERAGE('{table_name}'[{col}])", "formatString": "#,0.00"},

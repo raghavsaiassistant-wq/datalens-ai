@@ -4,7 +4,7 @@ Fix for Bug #4: hardcoded "$K" USD in analytical_engine.py.
 """
 import re
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import pandas as pd
 
 logger = logging.getLogger("Currency")

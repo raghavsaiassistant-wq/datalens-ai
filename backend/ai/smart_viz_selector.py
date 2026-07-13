@@ -8,12 +8,11 @@ Pure pandas aggregations — all data is pre-computed for Plotly.
 import json
 import logging
 import math
-from typing import List, Optional
+from typing import List
 import pandas as pd
 import numpy as np
 from ai.chart_recommender import ChartConfig
 from ai.dataset_classifier import DatasetMeta
-from ai.analytical_engine import Finding
 
 logger = logging.getLogger("SmartVizSelector")
 
@@ -21,9 +20,12 @@ MAX_CHARTS = 6
 
 
 def _safe(v):
-    if isinstance(v, (np.integer,)):  return int(v)
-    if isinstance(v, (np.floating,)): return None if (math.isnan(float(v)) or math.isinf(float(v))) else float(v)
-    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)): return None
+    if isinstance(v, (np.integer,)):
+        return int(v)
+    if isinstance(v, (np.floating,)):
+        return None if (math.isnan(float(v)) or math.isinf(float(v))) else float(v)
+    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+        return None
     return v
 
 
@@ -224,7 +226,6 @@ class SmartVizSelector:
                     except Exception:
                         df_tmp["_bucket"] = pd.cut(df_tmp[seg_col], bins=4, include_lowest=True).astype(str)
 
-                    bucket_means = df_tmp.groupby("_bucket")[pm].mean().sort_index()
                     seg_data = [
                         {"x": _safe(float(row[pm])), "y": str(row["_bucket"])}
                         for _, row in df_tmp.groupby("_bucket")[pm].mean().reset_index().iterrows()
@@ -329,7 +330,6 @@ class SmartVizSelector:
             if m_col not in df.columns or m_col in identifiers:
                 continue
             total = _safe(float(df[m_col].sum()))
-            mean_val = _safe(float(df[m_col].mean()))
             charts.append(ChartConfig(
                 chart_type="kpi_card", title=f"Total {m_col}",
                 x_col=None, y_col=m_col, color_col=None,
