@@ -703,11 +703,15 @@
   <!-- Upload zone -->
   <div id="upload-zone" class="upload-zone">
     <div class="ico">⚡</div>
-    <h2>Drop a file. Get a dashboard.</h2>
-    <p>CSV, Excel, JSON, SQL, PDF, or image — interactive dashboard in 30 seconds.</p>
-    <label for="file-input">Choose file</label>
-    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.sql,.pdf,.png,.jpg,.jpeg,.webp">
-    <div class="formats">.csv · .xlsx · .json · .sql · .pdf · .png · up to 25 MB</div>
+    <h2>Drop files. Get a unified dashboard.</h2>
+    <p>Upload 2-10 related files (CSV/Excel) — auto-detects relationships, builds star schema, generates AI insights across files.</p>
+    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+      <label for="file-input">Choose files</label>
+      <button type="button" id="multi-upload-btn" class="btn-secondary" style="display:none;" onclick="triggerMultiUpload()">+ Add another file</button>
+    </div>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.sql,.pdf,.png,.jpg,.jpeg,.webp" multiple>
+    <div id="multi-file-list" class="multi-file-list" style="display:none;"></div>
+    <div class="formats">.csv · .xlsx · .json · .sql · .pdf · .png · up to 25 MB each · 100K rows total · 10 files max</div>
   </div>
 
   <!-- Dashboard -->
@@ -918,15 +922,88 @@ document.getElementById('cmd-input').addEventListener('keydown', e => {
 window.addEventListener('load', async () => {
   applyTheme(getTheme());
   await checkHealth();
-  document.getElementById('file-input').addEventListener('change', e => uploadFile(e.target.files[0]));
+  document.getElementById('file-input').addEventListener('change', e => handleFileSelection(e.target.files));
   const zone = document.getElementById('upload-zone');
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
   zone.addEventListener('drop', e => {
     e.preventDefault(); zone.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length) handleFileSelection(e.dataTransfer.files);
   });
 });
+
+/* ═══ MULTI-FILE UPLOAD (Sprint 3) ═══ */
+let selectedFiles = [];
+function handleFileSelection(fileList) {
+  // Add new files to selection
+  for (const f of fileList) {
+    if (selectedFiles.length >= 10) {
+      showToast('Max 10 files allowed', 3000, 'error');
+      break;
+    }
+    selectedFiles.push(f);
+  }
+  renderFileList();
+  if (selectedFiles.length >= 2) {
+    // Auto-trigger multi-file upload
+    uploadMultipleFiles();
+  } else if (selectedFiles.length === 1) {
+    showToast('Add at least 1 more file for multi-file mode. Or wait, single-file upload coming.', 3000, 'info');
+  }
+}
+
+function renderFileList() {
+  const list = document.getElementById('multi-file-list');
+  const btn = document.getElementById('multi-upload-btn');
+  if (selectedFiles.length === 0) {
+    list.style.display = 'none';
+    btn.style.display = 'none';
+    return;
+  }
+  list.style.display = 'block';
+  btn.style.display = 'inline-block';
+  list.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-chip">
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${(f.size / 1024).toFixed(1)} KB</span>
+      <button class="file-remove" onclick="removeFile(${i})">×</button>
+    </div>
+  `).join('') + `
+    <button class="btn-primary" onclick="uploadMultipleFiles()" style="margin-top:8px;">
+      ${selectedFiles.length === 1 ? 'Upload 1 file' : `Upload ${selectedFiles.length} files & detect relationships`}
+    </button>
+  `;
+}
+
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  renderFileList();
+}
+
+function triggerMultiUpload() {
+  document.getElementById('file-input').click();
+}
+
+async function uploadMultipleFiles() {
+  if (selectedFiles.length < 2) {
+    showToast('Need at least 2 files for multi-file mode', 3000, 'error');
+    return;
+  }
+  showProgress(`Uploading ${selectedFiles.length} files...`, 5, 'Detecting relationships...');
+  const fd = new FormData();
+  for (const f of selectedFiles) {
+    fd.append('files', f);
+  }
+  try {
+    const r = await fetch('/api/analyze/multi', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    currentJobId = d.job_id;
+    pollJob();
+  } catch (e) {
+    showToast('Upload failed: ' + e.message, 5000, 'error');
+  }
+}
 
 async function checkHealth() {
   try {
