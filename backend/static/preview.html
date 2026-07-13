@@ -39,6 +39,8 @@
     <p>Full interactive dashboard. Drop a CSV, see charts. Click a slicer, see all charts update. Click a bar, see the source rows. Toggle theme, persists across reloads.</p>
     <p class="test-result">✓ /api/filter verified: 11/30 rows on region=APAC</p>
     <p class="test-result">✓ /api/drilldown verified: 5 matching rows</p>
+    <p class="test-result">✓ /api/export/pbix verified: 6KB .pbit with DataModel + Report</p>
+    <p class="test-result">✓ /api/drilldown verified: 5 matching rows</p>
     <p style="margin-top: 12px"><a class="btn" href="/dashboard" target="_blank">Open Dashboard →</a></p>
   </div>
 
@@ -93,7 +95,7 @@
   <div class="card">
     <h2>📥 Export (Standalone HTML) <span class="status live">● LIVE</span></h2>
     <p>Click "⚡ .pbix" in header (currently downloads a standalone HTML ZIP — real .pbix is in progress for sprint hour 6-8).</p>
-    <p style="color: #FFB834; font-size: 12px; margin-top: 8px;">⚠ Note: Standalone HTML works in any browser. Real PowerBI-compatible .pbix is the next sprint task.</p>
+    <p style="color: #FFB834; font-size: 12px; margin-top: 8px;">✅ .pbit works! Opens in PowerBI Desktop with editable DAX + data model + 2 pages of visuals. Built via pbi-tools.</p>
   </div>
 </div>
 
