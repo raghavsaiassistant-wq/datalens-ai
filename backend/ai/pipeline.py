@@ -178,14 +178,41 @@ class AnalysisPipeline:
         # Cap at 5000 rows for session storage. Frontend uses these to re-render
         # KPIs/charts when slicers change, and to show drill-down modals.
         try:
-            # Make a JSON-safe copy of the dataframe (no Timestamp, no numpy, etc.)
+            # Make a JSON-safe copy of the dataframe (no Timestamp, no numpy, no NaN)
+            import math
             df_safe = df.head(5000).copy()
             for col in df_safe.columns:
                 if df_safe[col].dtype.kind in ('M',):  # datetime
                     df_safe[col] = df_safe[col].astype(str)
-                elif df_safe[col].dtype.kind in ('i', 'f'):
+                else:
+                    # For ALL non-datetime columns: convert NaN/nan to None
+                    # (object columns with empty strings also get None)
                     df_safe[col] = df_safe[col].astype(object).where(df_safe[col].notna(), None)
-            records = json.loads(json.dumps(df_safe.to_dict(orient="records"), default=str))
+            # Cast all values to JSON-safe types in a final pass
+            raw_records = df_safe.to_dict(orient="records")
+            clean_records = []
+            for rec in raw_records:
+                clean = {}
+                for k, v in rec.items():
+                    if v is None:
+                        clean[k] = None
+                    elif isinstance(v, float):
+                        if math.isnan(v) or math.isinf(v):
+                            clean[k] = None
+                        else:
+                            clean[k] = v
+                    elif isinstance(v, (int, str, bool)):
+                        clean[k] = v
+                    else:
+                        # Anything else (numpy, etc) → string
+                        try:
+                            clean[k] = str(v)
+                        except Exception:
+                            clean[k] = None
+                clean_records.append(clean)
+            # Final guard: ensure no 'NaN' string anywhere
+            text = json.dumps(clean_records, default=str, allow_nan=False)
+            records = json.loads(text)
             records_columns = list(df.columns)
         except Exception as e:
             logger.warning(f"Could not serialize records: {e}")
