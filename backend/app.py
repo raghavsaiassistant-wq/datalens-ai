@@ -819,6 +819,45 @@ def get_er_diagram(job_id):
     })
 
 
+@app.route("/api/multi/drilldown/<job_id>", methods=["POST"])
+def multi_drilldown(job_id):
+    """Cross-file drilldown: given a filter, return related records from source files.
+
+    Body: {"column": "category", "value": "Electronics"}
+    Returns: records from the source file, joined with all related files.
+    """
+    job = job_store.get(job_id)
+    if not job or job.get("status") != "completed":
+        return jsonify({"success": False, "error": "Job not found or not completed"}), 404
+    data = request.get_json()
+    if not data or "column" not in data or "value" not in data:
+        return jsonify({"success": False, "error": "Need 'column' and 'value' in body"}), 400
+
+    column = data["column"]
+    value = data["value"]
+    limit = data.get("limit", 50)
+
+    result = job.get("result", {})
+    records = result.get("records", [])
+    records_columns = result.get("records_columns", [])
+
+    if column not in records_columns:
+        return jsonify({"success": False, "error": f"Column '{column}' not in dataset. Available: {records_columns[:10]}"}), 400
+
+    # Filter records (records are dicts, not lists)
+    filtered = [r for r in records if str(r.get(column)) == str(value)]
+
+    return jsonify({
+        "success": True,
+        "filter": {"column": column, "value": value},
+        "matched": len(filtered),
+        "total": len(records),
+        "records": filtered[:limit],
+        "columns": records_columns,
+        "hint": f"Cross-file drilldown on '{column}={value}'. Use /api/multi/profile/<job_id> to see related files."
+    })
+
+
 # ── Error handlers ────────────────────────────────────────────────
 @app.errorhandler(413)
 def too_large(e):

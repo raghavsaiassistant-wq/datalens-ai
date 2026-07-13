@@ -203,11 +203,13 @@ def detect_relationships(
     1. For each pair of files (A, B), find column name matches (after normalization).
     2. For each name match, verify value overlap (if > 50%, it's a real FK).
     3. Determine cardinality: M:1 if A has duplicates of B's PK values.
+    4. NEW: Composite key detection (multi-column FKs like (order_id, product_id))
     """
     file_names = list(file_profiles.keys())
     relationships = []
     seen = set()
 
+    # Pass 1: Single-column FKs (existing logic)
     for i, name_a in enumerate(file_names):
         for j, name_b in enumerate(file_names):
             if i >= j:
@@ -280,6 +282,61 @@ def detect_relationships(
                         relationship_type=rel_type,
                         detection_method=detection,
                     ))
+
+    # Pass 2: Composite keys (NEW in Sprint 2)
+    # Heuristic: 2+ columns in A whose combined uniqueness is much higher than any single column
+    # AND match columns in B (e.g., order_id+product_id in A vs same in B)
+    for i, name_a in enumerate(file_names):
+        for j, name_b in enumerate(file_names):
+            if i >= j:
+                continue
+            prof_a = file_profiles[name_a]
+            prof_b = file_profiles[name_b]
+            df_a = dataframes[name_a]
+            df_b = dataframes[name_b]
+
+            # Find pairs of columns in A that look like composite keys
+            int_cols_a = [c for c in prof_a.columns
+                          if prof_a.column_profiles[c].dtype == 'int'
+                          and prof_a.column_profiles[c].uniqueness_ratio < 0.5]
+            for k, col_a1 in enumerate(int_cols_a):
+                for col_a2 in int_cols_a[k+1:]:
+                    # Check if combined uniqueness is high
+                    combined = df_a[col_a1].astype(str) + "_" + df_a[col_a2].astype(str)
+                    combined_uniqueness = combined.nunique() / max(len(combined), 1)
+                    # If combined uniqueness > 0.95, this might be a composite key
+                    if combined_uniqueness < 0.95:
+                        continue
+                    # Look for matching pair in B
+                    for col_b1 in prof_b.columns:
+                        if col_b1 not in int_cols_a and prof_b.column_profiles[col_b1].dtype != 'int':
+                            continue
+                        for col_b2 in prof_b.columns:
+                            if col_b2 == col_b1:
+                                continue
+                            if prof_b.column_profiles[col_b2].dtype != 'int':
+                                continue
+                            # Check combined uniqueness in B
+                            combined_b = df_b[col_b1].astype(str) + "_" + df_b[col_b2].astype(str)
+                            if combined_b.nunique() / max(len(combined_b), 1) < 0.95:
+                                continue
+                            # Compute combined overlap
+                            overlap = _value_overlap_pct(combined, combined_b)
+                            if overlap < 0.5:
+                                continue
+                            key = (name_a, f"{col_a1}+{col_a2}", name_b, f"{col_b1}+{col_b2}")
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            relationships.append(Relationship(
+                                from_file=name_a,
+                                from_column=f"{col_a1}+{col_a2}",
+                                to_file=name_b,
+                                to_column=f"{col_b1}+{col_b2}",
+                                confidence=round(0.3 + 0.7 * overlap, 3),
+                                relationship_type="many_to_one",
+                                detection_method="composite_key",
+                            ))
 
     # Sort by confidence desc
     relationships.sort(key=lambda r: r.confidence, reverse=True)
