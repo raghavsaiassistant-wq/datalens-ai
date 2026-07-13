@@ -15,6 +15,7 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import pandas as pd
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flask_limiter import Limiter
@@ -642,7 +643,122 @@ def get_dataset(session_id):
     }))
 
 
-# ── Error handlers ──────────────────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════════════
+# MULTI-FILE PIPELINE — Phase 1: 2026-07-14
+# ════════════════════════════════════════════════════════════════════════════
+# Accepts 2-10 files, detects PKs/FKs, builds star schema, runs AI on unified data.
+# MVP scope: synchronous, in-memory, 100K row cap, simple FK detection.
+# ════════════════════════════════════════════════════════════════════════════
+
+from ai.multi_file import run_multi_file_pipeline, get_unified_dataframe_from_result
+from parsers.csv_parser import CSVParser
+from utils.data_serializer import DataSerializer
+
+
+@app.route("/api/analyze/multi", methods=["POST"])
+@limiter.limit("3 per minute")
+def analyze_multi():
+    """Multi-file analysis: accept N files, detect relationships, build unified dashboard."""
+    if "files" not in request.files:
+        return jsonify({"success": False, "error": "No 'files' field in request. Use multipart/form-data with field name 'files'"}), 400
+
+    # Get all files (request.files is a MultiDict)
+    file_list = request.files.getlist("files")
+    if not file_list or len(file_list) < 2:
+        return jsonify({"success": False, "error": "Need at least 2 files for multi-file analysis"}), 400
+    if len(file_list) > 10:
+        return jsonify({"success": False, "error": "Maximum 10 files allowed"}), 400
+
+    # Read content + metadata
+    files_payload = []
+    for f in file_list:
+        if not f.filename:
+            continue
+        content = f.read()
+        if len(content) == 0:
+            continue
+        file_id = f.filename.rsplit('.', 1)[0]  # use filename stem as ID
+        files_payload.append((file_id, f.filename, content))
+
+    if len(files_payload) < 2:
+        return jsonify({"success": False, "error": "Need at least 2 non-empty files"}), 400
+
+    job_id = uuid.uuid4().hex
+    job_store.create(job_id, f"multi_file_{len(files_payload)}_files")
+
+    def run_multi():
+        import asyncio
+        try:
+            job_store.update(job_id, status="processing", progress=1,
+                              message=f"📂 Parsing {len(files_payload)} files...")
+            # Step 1: Multi-file pipeline (parse + FK detection + star schema)
+            pipeline_result = run_multi_file_pipeline(files_payload)
+            if not pipeline_result.get("success"):
+                job_store.update(job_id, status="failed", error=pipeline_result.get("error", "Pipeline failed"))
+                return
+
+            job_store.update(job_id, progress=3, message=f"🔗 Found {len(pipeline_result['relationships'])} relationships...")
+
+            # Step 2: Build DataProfile from unified dataframe
+            unified_df = get_unified_dataframe_from_result(pipeline_result, files_payload)
+            if unified_df is None or len(unified_df) == 0:
+                job_store.update(job_id, status="failed", error="Empty unified dataframe")
+                return
+
+            # Adapt unified DF to DataProfile format (use DataProfiler)
+            from parsers.base_parser import DataProfile
+            from utils.data_profiler import DataProfiler
+            import time
+            t0 = time.time()
+            profile = DataProfiler.profile(
+                df=unified_df,
+                source_type='multi_file',
+                file_name=f"multi_file_{job_id}.csv",
+                processing_time=time.time() - t0,
+                warnings=[],
+            )
+
+            job_store.update(job_id, progress=4, message="🤖 Running AI insights on unified data...")
+            # Step 3: Run existing AI pipeline on unified data
+            result = asyncio.run(pipeline.run(
+                profile,
+                progress_callback=lambda s, m: job_store.update(job_id, progress=s, message=m)
+            ))
+
+            # Add multi-file metadata
+            result['multi_file'] = pipeline_result
+            result['mode'] = 'multi_file'
+            session_store.save(job_id, result)
+            job_store.update(job_id, status="completed", progress=6,
+                              message="✅ Multi-file analysis complete", result=result)
+        except Exception as e:
+            logger.error(f"Multi-file analysis failed: {e}", exc_info=True)
+            job_store.update(job_id, status="failed", error=str(e))
+
+    t = threading.Thread(target=run_multi, daemon=True)
+    t.start()
+    return jsonify({"success": True, "job_id": job_id, "file_count": len(files_payload)}), 202
+
+
+@app.route("/api/multi/profile/<job_id>", methods=["GET"])
+def get_multi_profile(job_id):
+    """Get the multi-file pipeline profile (relationships, schema, etc.) for a job."""
+    job = job_store.get(job_id)
+    if not job:
+        return jsonify({"success": False, "error": "Job not found"}), 404
+    if job.get("status") != "completed":
+        return jsonify({"success": False, "error": f"Job not completed: {job.get('status')}"}), 400
+    result = job.get("result", {})
+    multi = result.get("multi_file", {})
+    if not multi:
+        return jsonify({"success": False, "error": "No multi-file data"}), 404
+    # Remove the heavy unified_data sample (already in records)
+    if "unified_data" in multi:
+        del multi["unified_data"]["sample_records"]
+    return jsonify({"success": True, **multi})
+
+
+# ── Error handlers ────────────────────────────────────────────────
 @app.errorhandler(413)
 def too_large(e):
     return jsonify({"success": False, "error": f"File exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit"}), 413
