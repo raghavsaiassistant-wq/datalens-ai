@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataLens AI — Test Console</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 24px; }
+  h1 { color: #7c3aed; margin-bottom: 8px; }
+  h2 { color: #06b6d4; margin: 24px 0 8px; font-size: 16px; }
+  .sub { color: #888; margin-bottom: 16px; font-size: 13px; }
+  .card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  input, button, select { background: #222; color: #e0e0e0; border: 1px solid #444; border-radius: 4px; padding: 8px 12px; font-size: 14px; }
+  button { background: #7c3aed; border: none; cursor: pointer; padding: 10px 20px; font-weight: 600; }
+  button:hover { background: #6d28d9; }
+  button:disabled { background: #444; cursor: not-allowed; }
+  pre { background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 4px; padding: 12px; overflow-x: auto; font-size: 12px; line-height: 1.4; max-height: 400px; overflow-y: auto; }
+  .status { padding: 8px 12px; border-radius: 4px; margin: 8px 0; font-size: 13px; }
+  .status.ok { background: #064e3b; color: #6ee7b7; }
+  .status.err { background: #7f1d1d; color: #fca5a5; }
+  .status.run { background: #1e3a8a; color: #93c5fd; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 12px; background: #333; color: #aaa; font-size: 11px; margin-left: 6px; }
+  .pill.green { background: #064e3b; color: #6ee7b7; }
+  .pill.red { background: #7f1d1d; color: #fca5a5; }
+  .finding { background: #0d0d0d; border-left: 3px solid #06b6d4; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
+  .finding.high { border-left-color: #ef4444; }
+  .finding.med { border-left-color: #f59e0b; }
+</style>
+</head>
+<body>
+<h1>🛰️ DataLens AI <span style="color:#888;font-size:14px">v2.0.0-ollama</span></h1>
+<p class="sub">Test console — file drop → dashboard + chat. All from your browser.</p>
+
+<!-- ─── HEALTH ─── -->
+<div class="card">
+  <h2>1. Health Check <span id="health-pill" class="pill">?</span></h2>
+  <button onclick="checkHealth()">Check Ollama Cloud</button>
+  <div id="health-out"></div>
+</div>
+
+<!-- ─── ANALYZE ─── -->
+<div class="card">
+  <h2>2. Analyze File <span class="pill">full LLM pipeline</span></h2>
+  <input type="file" id="file" accept=".csv,.xlsx,.json,.sql,.pdf,.png,.jpg,.jpeg,.webp">
+  <button onclick="analyze()" id="analyze-btn">Upload & Analyze (60-90s)</button>
+  <div id="analyze-out"></div>
+</div>
+
+<!-- ─── RESULT ─── -->
+<div class="card" id="result-card" style="display:none">
+  <h2>3. Result <span id="time-pill" class="pill"></span></h2>
+  <div id="exec-summary"></div>
+  <h2 style="margin-top:20px">Key Findings</h2>
+  <div id="findings"></div>
+  <h2 style="margin-top:20px">L1 Facts (statistical)</h2>
+  <div id="l1"></div>
+  <h2 style="margin-top:20px">L3 Board Insights</h2>
+  <div id="l3"></div>
+  <h2 style="margin-top:20px">Charts</h2>
+  <div id="charts"></div>
+  <h2 style="margin-top:20px">Anomalies (with AI explanations)</h2>
+  <div id="anomalies"></div>
+  <h2 style="margin-top:20px">Metadata</h2>
+  <pre id="meta"></pre>
+  <h2>Full JSON</h2>
+  <pre id="full-result"></pre>
+</div>
+
+<!-- ─── CHAT ─── -->
+<div class="card" id="chat-card" style="display:none">
+  <h2>4. Chat with Data <span class="pill">/api/ask/sync</span></h2>
+  <input type="text" id="question" placeholder="Ask about your data..." style="width:70%">
+  <button onclick="chat()">Ask</button>
+  <div id="chat-out"></div>
+</div>
+
+<script>
+let currentJobId = null;
+let pollHandle = null;
+
+async function checkHealth() {
+  const out = document.getElementById('health-out');
+  out.innerHTML = '<div class="status run">Checking Ollama Cloud...</div>';
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    const pill = document.getElementById('health-pill');
+    if (d.ollama_cloud) { pill.className = 'pill green'; pill.textContent = '✓ healthy'; }
+    else { pill.className = 'pill red'; pill.textContent = '✗ degraded'; }
+    out.innerHTML = `<div class="status ${d.ollama_cloud ? 'ok' : 'err'}">${JSON.stringify(d, null, 2)}</div>`;
+  } catch (e) {
+    out.innerHTML = `<div class="status err">Error: ${e.message}</div>`;
+  }
+}
+
+async function analyze() {
+  const file = document.getElementById('file').files[0];
+  if (!file) { alert('Pick a file first'); return; }
+  const btn = document.getElementById('analyze-btn');
+  const out = document.getElementById('analyze-out');
+  btn.disabled = true;
+  out.innerHTML = `<div class="status run">📤 Uploading ${file.name} (${(file.size/1024).toFixed(1)} KB)...</div>`;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/analyze', { method: 'POST', body: fd });
+    const d = await r.json();
+    currentJobId = d.job_id;
+    out.innerHTML += `<div class="status run">Job ID: <code>${currentJobId}</code> — polling every 3s...</div>`;
+    poll();
+  } catch (e) {
+    out.innerHTML = `<div class="status err">Upload error: ${e.message}</div>`;
+    btn.disabled = false;
+  }
+}
+
+async function poll() {
+  if (!currentJobId) return;
+  try {
+    const r = await fetch(`/api/status/${currentJobId}`);
+    const d = await r.json();
+    const out = document.getElementById('analyze-out');
+    const lastStatus = out.querySelector('.status.run:last-child');
+    if (lastStatus) lastStatus.remove();
+    out.innerHTML += `<div class="status run">Step ${d.progress || 0}/6 — ${d.message || d.status || '...'}</div>`;
+    if (d.status === 'completed') {
+      out.innerHTML = `<div class="status ok">✅ Analysis complete in ${d.result?.metadata?.total_time_seconds || '?'}s</div>`;
+      document.getElementById('analyze-btn').disabled = false;
+      renderResult(d.result);
+      document.getElementById('result-card').style.display = 'block';
+      document.getElementById('chat-card').style.display = 'block';
+    } else if (d.status === 'failed') {
+      out.innerHTML = `<div class="status err">❌ Failed: ${d.error || 'unknown'}</div>`;
+      document.getElementById('analyze-btn').disabled = false;
+    } else {
+      setTimeout(poll, 3000);
+    }
+  } catch (e) {
+    setTimeout(poll, 5000);
+  }
+}
+
+function renderResult(r) {
+  if (!r) return;
+  document.getElementById('time-pill').textContent = `${r.metadata?.total_time_seconds || '?'}s`;
+  document.getElementById('exec-summary').innerHTML =
+    `<div class="finding high"><b>Executive Summary:</b><br>${r.executive_summary || 'N/A'}</div>`;
+
+  const fDiv = document.getElementById('findings');
+  fDiv.innerHTML = '';
+  (r.key_findings || []).forEach(f => {
+    const cls = f.impact === 'high' ? 'high' : (f.impact === 'medium' ? 'med' : '');
+    fDiv.innerHTML += `<div class="finding ${cls}"><b>[${f.impact}] ${f.headline}</b><br>${f.detail}</div>`;
+  });
+  if (!r.key_findings?.length) fDiv.innerHTML = '<div class="finding">No key findings</div>';
+
+  const l1Div = document.getElementById('l1');
+  l1Div.innerHTML = '';
+  (r.insights?.l1_facts || []).forEach(f => l1Div.innerHTML += `<div class="finding">• ${f}</div>`);
+  if (!r.insights?.l1_facts?.length) l1Div.innerHTML = '<div class="finding">No L1 facts</div>';
+
+  const l3Div = document.getElementById('l3');
+  l3Div.innerHTML = '';
+  (r.insights?.l3_insights || []).forEach(i => {
+    const txt = typeof i === 'string' ? i : (i.insight || i.title || JSON.stringify(i));
+    l3Div.innerHTML += `<div class="finding high">💼 ${txt}</div>`;
+  });
+  if (!r.insights?.l3_insights?.length) l3Div.innerHTML = '<div class="finding">No board insights</div>';
+
+  const cDiv = document.getElementById('charts');
+  cDiv.innerHTML = '';
+  (r.charts || []).forEach(c => {
+    cDiv.innerHTML += `<div class="finding"><b>${c.chart_type}</b>: ${c.title} (${c.data?.length || 0} pts)</div>`;
+  });
+  if (!r.charts?.length) cDiv.innerHTML = '<div class="finding">No charts</div>';
+
+  const aDiv = document.getElementById('anomalies');
+  aDiv.innerHTML = '';
+  (r.anomalies || []).forEach(a => {
+    aDiv.innerHTML += `<div class="finding med"><b>${a.column}</b> [${a.anomaly_type}]: ${a.explanation || 'no explanation'}</div>`;
+  });
+  if (!r.anomalies?.length) aDiv.innerHTML = '<div class="finding">No anomalies</div>';
+
+  document.getElementById('meta').textContent = JSON.stringify(r.metadata || {}, null, 2);
+  document.getElementById('full-result').textContent = JSON.stringify(r, null, 2);
+}
+
+async function chat() {
+  const q = document.getElementById('question').value.trim();
+  if (!q) { alert('Type a question'); return; }
+  const out = document.getElementById('chat-out');
+  out.innerHTML = '<div class="status run">Asking Ollama Cloud...</div>';
+  try {
+    const r = await fetch('/api/ask/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: currentJobId, question: q })
+    });
+    const d = await r.json();
+    if (d.success) {
+      out.innerHTML = `<div class="status ok"><b>A:</b> ${d.answer}</div>`;
+    } else {
+      out.innerHTML = `<div class="status err">${d.error}</div>`;
+    }
+  } catch (e) {
+    out.innerHTML = `<div class="status err">Error: ${e.message}</div>`;
+  }
+}
+
+// Auto-check health on load
+checkHealth();
+</script>
+</body>
+</html>

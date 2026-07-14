@@ -1,16 +1,19 @@
 """
 job_store.py
 
-SQLite-backed job store. Shared across all gunicorn workers via /tmp/datalens_jobs.db.
+SQLite-backed job store. Shared across all gunicorn workers via configurable path.
 Replaces the in-memory JOBS dict that caused race conditions with --workers > 1.
 """
 import sqlite3
 import json
 import time
 import os
+import tempfile
 from typing import Optional
 
-DB_PATH = os.getenv("JOB_DB_PATH", "/tmp/datalens_jobs.db")
+# Platform-aware default: /tmp/ on Linux/macOS, %TEMP% on Windows
+_DEFAULT_DB = os.path.join(tempfile.gettempdir(), "datalens_jobs.db")
+DB_PATH = os.getenv("JOB_DB_PATH", _DEFAULT_DB)
 
 
 class JobStore:

@@ -5,12 +5,10 @@ Understands WHAT a dataset is before any analysis runs.
 Assigns roles to every column and detects the dataset type.
 Pure Python + pandas — no NIM calls, max 1 second.
 """
-import re
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 import pandas as pd
-import numpy as np
 
 logger = logging.getLogger("DatasetClassifier")
 
@@ -149,7 +147,17 @@ class DatasetClassifier:
         if clow.endswith("_id") or (clow.endswith("id") and len(clow) > 2):
             return True
         # Integer with high cardinality — but skip when the name looks like
-        # an attribute/segment (age, score, grade, store, etc.) rather than an ID
+        # an attribute/segment (age, score, grade, store, etc.) rather than an ID.
+        # ALSO skip when the column name has financial/measure keywords (revenue,
+        # sales, price, cost, amount, units, count, qty, quantity, total, profit,
+        # margin, budget, expense) — these are MEASURES not IDs.
+        MEASURE_KEYWORDS = {"revenue", "sales", "price", "cost", "amount", "units",
+                            "count", "qty", "quantity", "total", "profit", "margin",
+                            "budget", "expense", "value", "fee", "rate", "score",
+                            "balance", "tax", "discount"}
+        for mk in MEASURE_KEYWORDS:
+            if mk in clow:
+                return False
         if pd.api.types.is_integer_dtype(series.dtype):
             # Reject cardinality-based detection for obvious measurement columns
             for seg_kw in SEGMENT_KEYWORDS:
@@ -347,7 +355,6 @@ class DatasetClassifier:
     def _build_description(self, df, dataset_type, profile, primary_dim,
                            primary_measure, n_locations, n_variants, n_periods, roles) -> str:
         rows = len(df)
-        file = getattr(profile, "file_name", "dataset")
 
         if dataset_type == "experiment":
             dim_label = primary_dim or "variants"

@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>DataLens AI — Interactive Analytics Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     THEME TOKENS — drives EVERYTHING in the dashboard
+     Toggle changes data-theme on <html>, this updates everything.
+     ═══════════════════════════════════════════════════════════ */
+  :root, [data-theme="light"] {
+    --bg-page: #F8F8F8;
+    --bg-card: #FFFFFF;
+    --bg-elevated: #F0F0F0;
+    --bg-sunken: #FAFAFA;
+    --bg-tint-blue: #EFF7FF;
+    --bg-tint-pink: #FFE7EE;
+    --bg-tint-orange: #FFF0E7;
+    --bg-tint-mint: #F0F8F8;
+    --bg-tint-violet: #F8F0F8;
+
+    --border: #EAEAEA;
+    --border-light: #F0F0F0;
+    --border-bright: #D8D8D8;
+
+    --text-primary: #2C2C2C;
+    --text-secondary: #5A5A5A;
+    --text-muted: #9CA3AF;
+    --text-inverse: #FFFFFF;
+
+    --primary: #5070E0;
+    --primary-light: #7090E0;
+    --primary-dark: #4070E0;
+    --primary-tint: #EFF7FF;
+
+    --accent-pink: #FD7E9D;
+    --accent-orange: #F09040;
+    --accent-teal: #21D1D1;
+    --accent-mint: #D8FAEF;
+    --accent-violet: #A87EC9;
+
+    --success: #22C55E;
+    --success-light: #DCFCE7;
+    --error: #EF4444;
+    --error-light: #FEE2E2;
+    --warning: #F59E0B;
+    --warning-light: #FEF3C7;
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 24px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+    --chart-grid: #F0F0F0;
+  }
+
+  [data-theme="dark"] {
+    --bg-page: #0F1117;
+    --bg-card: #181B23;
+    --bg-elevated: #1F2230;
+    --bg-sunken: #14161E;
+    --bg-tint-blue: #1E2A4A;
+    --bg-tint-pink: #3A1F2A;
+    --bg-tint-orange: #3A2A1F;
+    --bg-tint-mint: #1F2F2F;
+    --bg-tint-violet: #2A1F3A;
+
+    --border: #2A2D38;
+    --border-light: #1F2230;
+    --border-bright: #3A3F50;
+
+    --text-primary: #F0F2FF;
+    --text-secondary: #B0B6D6;
+    --text-muted: #6E7494;
+    --text-inverse: #181B23;
+
+    --primary: #6080F0;
+    --primary-light: #80A0F0;
+    --primary-dark: #5070E0;
+    --primary-tint: #1E2A4A;
+
+    --accent-pink: #FF8EAD;
+    --accent-orange: #FFA050;
+    --accent-teal: #30E0E0;
+    --accent-mint: #2DAA8A;
+    --accent-violet: #B88ED9;
+
+    --success: #34D672;
+    --success-light: #143A20;
+    --error: #FF5454;
+    --error-light: #3A1F1F;
+    --warning: #FFB834;
+    --warning-light: #3A2F1F;
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 24px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    --chart-grid: #2A2D38;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg-page); color: var(--text-primary); }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-page);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s, color 0.2s;
+  }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ═══ TOP BAR (Figma spec) ═══ */
+  .topbar {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand-mark {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: white; font-weight: 800; font-size: 13px;
+  }
+  .topbar-search { flex: 0 1 280px; position: relative; }
+  .topbar-search input {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid transparent;
+    color: var(--text-primary);
+    padding: 7px 12px 7px 32px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .topbar-search input:focus {
+    background: var(--bg-card);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(80,112,224,0.1);
+  }
+  .topbar-search::before {
+    content: '🔍';
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; pointer-events: none; opacity: 0.5;
+  }
+  .topbar-title { flex: 1; text-align: center; font-weight: 500; font-size: 13px; color: var(--text-secondary); }
+  .topbar-actions { display: flex; align-items: center; gap: 6px; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-size: 14px;
+    position: relative;
+  }
+  .icon-btn:hover { background: var(--bg-elevated); border-color: var(--border-bright); color: var(--text-primary); }
+  .icon-btn.active { background: var(--primary-tint); border-color: var(--primary); color: var(--primary); }
+  .date-pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: all 0.12s;
+  }
+  .date-pill:hover { border-color: var(--primary); }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    display: grid; place-items: center;
+    color: white; font-weight: 700; font-size: 11px;
+    cursor: pointer;
+  }
+  .btn {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--bg-card); border-color: var(--border-bright); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border: none; color: white;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-pbix { background: linear-gradient(135deg, #F2C811, #E8A200); border: none; color: #1A1A1A; }
+
+  /* ═══ MAIN LAYOUT ═══ */
+  .main { padding: 20px 24px 80px; max-width: 1600px; margin: 0 auto; }
+
+  /* ═══ ACTIVE FILTER CHIPS ═══ */
+  .filter-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    background: var(--primary-tint);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 4px 10px 4px 12px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .filter-chip .x {
+    cursor: pointer;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 800;
+  }
+  .filter-chip .x:hover { background: var(--primary-dark); }
+  .filter-clear {
+    background: transparent;
+    border: 1px dashed var(--border-bright);
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .filter-clear:hover { border-color: var(--error); color: var(--error); }
+  .filter-summary {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .filter-summary strong { color: var(--text-primary); }
+
+  /* ═══ GRID LAYOUT ═══ */
+  .grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ═══ SLICER RAIL ═══ */
+  .slicer-rail {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    height: fit-content;
+    position: sticky; top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .slicer-rail-title {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .slicer-section { margin-bottom: 14px; }
+  .slicer-section + .slicer-section { padding-top: 14px; border-top: 1px solid var(--border-light); }
+  .slicer-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    display: flex; justify-content: space-between;
+  }
+  .slicer-label .count { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .slicer-values { display: flex; flex-direction: column; gap: 2px; max-height: 180px; overflow-y: auto; }
+  .slicer-item {
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: all 0.1s;
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid transparent;
+  }
+  .slicer-item:hover { background: var(--bg-elevated); color: var(--text-primary); }
+  .slicer-item.active { background: var(--primary); color: white; font-weight: 600; }
+  .slicer-item .check { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* ═══ GREETING HERO ═══ */
+  .greeting {
+    background: linear-gradient(135deg, var(--primary-tint) 0%, var(--bg-card) 60%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px;
+    position: relative; overflow: hidden;
+  }
+  .greeting::after {
+    content: ''; position: absolute; right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    opacity: 0.08; border-radius: 50%; pointer-events: none;
+  }
+  .greeting-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .greeting-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+
+  /* ═══ KPI ROW (4 cards) ═══ */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .kpi-card.k1::before { background: linear-gradient(90deg, var(--accent-pink), var(--primary)); }
+  .kpi-card.k2::before { background: linear-gradient(90deg, var(--primary), var(--accent-teal)); }
+  .kpi-card.k3::before { background: linear-gradient(90deg, var(--accent-teal), var(--success)); }
+  .kpi-card.k4::before { background: linear-gradient(90deg, var(--accent-orange), var(--warning)); }
+  .kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .kpi-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    font-size: 16px;
+  }
+  .kpi-icon.tint-pink   { background: var(--bg-tint-pink);   color: var(--accent-pink); }
+  .kpi-icon.tint-blue   { background: var(--bg-tint-blue);   color: var(--primary); }
+  .kpi-icon.tint-mint   { background: var(--bg-tint-mint);   color: var(--accent-teal); }
+  .kpi-icon.tint-orange { background: var(--bg-tint-orange); color: var(--accent-orange); }
+  .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--text-primary); margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
+  .kpi-meta { font-size: 11px; color: var(--text-secondary); }
+
+  /* ═══ MAIN 2-COL ROW ═══ */
+  .row-2col {
+    display: grid; grid-template-columns: 7fr 5fr; gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 1100px) { .row-2col { grid-template-columns: 1fr; } }
+
+  /* ═══ CARDS ═══ */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+  .card-title::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary);
+  }
+  .chart-area { width: 100%; height: 280px; }
+  .chart-clickable { cursor: pointer; }
+
+  /* ═══ INSIGHT BANNER ═══ */
+  .insight {
+    background: linear-gradient(135deg, var(--primary-tint) 0%, var(--bg-tint-mint) 100%);
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .insight-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: white; font-size: 16px; flex-shrink: 0;
+  }
+  .insight-text { flex: 1; font-size: 13px; color: var(--text-primary); line-height: 1.5; }
+  .insight-text strong { color: var(--primary); }
+
+  /* ═══ TABLE ═══ */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
+  }
+  .data-table tr { cursor: pointer; transition: background 0.1s; }
+  .data-table tbody tr:hover { background: var(--bg-elevated); }
+  .status-pill { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+  .status-pill.success { background: var(--success-light); color: var(--success); }
+  .status-pill.warning { background: var(--warning-light); color: var(--warning); }
+  .status-pill.error   { background: var(--error-light);   color: var(--error); }
+  .status-pill.info    { background: var(--primary-tint);  color: var(--primary); }
+
+  /* ═══ UPLOAD ZONE ═══ */
+  .upload-zone {
+    background: var(--bg-card);
+    border: 2px dashed var(--border-bright);
+    border-radius: 16px;
+    padding: 60px 32px;
+    text-align: center;
+    margin: 60px auto;
+    max-width: 600px;
+    transition: all 0.2s;
+  }
+  .upload-zone.dragover { border-color: var(--primary); background: var(--primary-tint); }
+  .upload-zone .ico {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border-radius: 18px;
+    margin: 0 auto 16px;
+    display: grid; place-items: center;
+    color: white; font-size: 28px;
+    box-shadow: 0 8px 24px rgba(80,112,224,0.3);
+  }
+  .upload-zone h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
+  .upload-zone p { color: var(--text-secondary); margin-bottom: 20px; font-size: 13px; }
+  .upload-zone label {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    color: white;
+    padding: 11px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(80,112,224,0.3);
+  }
+  .upload-zone input[type="file"] { display: none; }
+  .upload-zone .formats { margin-top: 14px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ═══ PROGRESS OVERLAY ═══ */
+  .progress-overlay {
+    position: fixed; inset: 0;
+    background: rgba(248,248,248,0.92);
+    backdrop-filter: blur(8px);
+    display: grid; place-items: center;
+    z-index: 1000;
+  }
+  [data-theme="dark"] .progress-overlay { background: rgba(15,17,23,0.92); }
+  .progress-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 36px;
+    min-width: 360px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .progress-spinner {
+    width: 44px; height: 44px;
+    margin: 0 auto 14px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-right-color: var(--accent-teal);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .progress-bar { height: 6px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent-violet)); transition: width 0.4s ease; }
+  .progress-step { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ═══ DRILLDOWN MODAL ═══ */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-card);
+    border-radius: 14px;
+    width: 90vw; max-width: 900px;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-title strong { color: var(--primary); }
+  .modal-close {
+    background: transparent; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 20px; width: 32px; height: 32px;
+    border-radius: 8px;
+  }
+  .modal-close:hover { background: var(--bg-elevated); color: var(--text-primary); }
+  .modal-body { flex: 1; overflow: auto; padding: 16px 20px; }
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-sunken);
+    font-size: 11px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ═══ CHAT PANEL ═══ */
+  .chat-fab {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border: none; color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(80,112,224,0.4);
+    z-index: 99;
+  }
+  .chat-panel {
+    position: fixed; bottom: 88px; right: 20px;
+    width: 360px; max-width: calc(100vw - 40px);
+    height: 480px; max-height: calc(100vh - 110px);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: none; flex-direction: column;
+    z-index: 99;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .chat-panel.open { display: flex; }
+  .chat-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-head .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+  .chat-head .title { font-weight: 600; font-size: 13px; }
+  .chat-head .sub { font-size: 10px; color: var(--text-muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+  .chat-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 12px; line-height: 1.45; }
+  .msg.user { background: linear-gradient(135deg, var(--primary), var(--accent-violet)); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.ai { background: var(--bg-elevated); align-self: flex-start; border-bottom-left-radius: 4px; color: var(--text-primary); }
+  .msg.system { background: var(--bg-sunken); align-self: center; font-size: 10px; color: var(--text-muted); border: 1px solid var(--border); text-align: center; padding: 4px 10px; }
+  .chat-sugg { padding: 0 12px 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .sugg {
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 10px; cursor: pointer; color: var(--text-secondary);
+    font-weight: 500;
+    font-family: inherit;
+  }
+  .sugg:hover { background: var(--primary-tint); color: var(--primary); border-color: var(--primary); }
+  .chat-in { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  .chat-in input {
+    flex: 1; background: var(--bg-elevated);
+    border: 1px solid transparent;
+    color: var(--text-primary);
+    padding: 8px 12px; border-radius: 999px;
+    font-size: 12px; font-family: inherit; outline: none;
+  }
+  .chat-in input:focus { background: var(--bg-card); border-color: var(--primary); }
+  .chat-send {
+    background: linear-gradient(135deg, var(--primary), var(--accent-violet));
+    border: none; color: white;
+    width: 34px; height: 34px; border-radius: 50%;
+    cursor: pointer; font-size: 13px;
+  }
+
+  .hidden { display: none !important; }
+  .loading { opacity: 0.5; pointer-events: none; }
+
+  /* ═══ TOAST ═══ */
+  .toast-wrap { position: fixed; top: 70px; right: 16px; z-index: 300; display: flex; flex-direction: column; gap: 6px; }
+  .toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
+    min-width: 220px; max-width: 360px;
+    animation: slideIn 0.25s ease;
+  }
+  .toast.success { border-left-color: var(--success); }
+  .toast.error { border-left-color: var(--error); }
+  .toast.warning { border-left-color: var(--warning); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ═══ CMD-K PALETTE ═══ */
+  .cmd-palette {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    width: 520px; max-width: 90vw;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    display: none;
+    overflow: hidden;
+  }
+  .cmd-palette.open { display: block; animation: slideDown 0.2s ease; }
+  @keyframes slideDown { from { transform: translate(-50%, -10px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+  .cmd-input {
+    width: 100%; padding: 14px 18px;
+    background: transparent; border: none; outline: none;
+    color: var(--text-primary);
+    font-size: 14px; font-family: inherit;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-results { max-height: 320px; overflow-y: auto; }
+  .cmd-item {
+    padding: 10px 18px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; font-size: 13px;
+    color: var(--text-primary);
+    transition: background 0.1s;
+  }
+  .cmd-item:hover, .cmd-item.selected { background: var(--primary-tint); color: var(--primary); }
+  .cmd-item .kbd {
+    margin-left: auto;
+    font-size: 10px; color: var(--text-muted);
+    background: var(--bg-elevated);
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">L</div>
+    <span>DataLens</span>
+  </div>
+  <div class="topbar-search">
+    <input type="text" placeholder="Search..." id="search-input">
+  </div>
+  <div class="topbar-title" id="topbar-title">Welcome back, Raghav ✨</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="showToast('Date range: All time')" title="Date">📅</button>
+    <button class="icon-btn" onclick="openCmdK()" title="Command palette (Ctrl+K)">⚡</button>
+    <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <button class="icon-btn" id="btn-reset" onclick="resetAll()" title="New file" style="display:none;">↺</button>
+    <button class="btn btn-pbix" id="btn-pbix" onclick="downloadPBIX()" style="display:none;" title="Real PowerBI file (opens in PowerBI Desktop with editable DAX)">📊 .pbit</button>
+    <button class="btn" id="btn-zip" onclick="downloadDashboard()" style="display:none;" title="Standalone HTML dashboard (opens in any browser)">📦 HTML</button>
+    <div class="avatar" title="Raghav">RM</div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main" id="main">
+  <!-- Upload zone -->
+  <div id="upload-zone" class="upload-zone">
+    <div class="ico">⚡</div>
+    <h2>Drop files. Get a unified dashboard.</h2>
+    <p>Upload 2-10 related files (CSV/Excel) — auto-detects relationships, builds star schema, generates AI insights across files.</p>
+    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+      <label for="file-input">Choose files</label>
+      <button type="button" id="multi-upload-btn" class="btn-secondary" style="display:none;" onclick="triggerMultiUpload()">+ Add another file</button>
+    </div>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json,.sql,.pdf,.png,.jpg,.jpeg,.webp" multiple>
+    <div id="multi-file-list" class="multi-file-list" style="display:none;"></div>
+    <div class="formats">.csv · .xlsx · .json · .sql · .pdf · .png · up to 25 MB each · 100K rows total · 10 files max</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden">
+    <!-- Active filter chips -->
+    <div class="filter-bar" id="filter-bar"></div>
+
+    <div class="grid">
+      <!-- Slicer rail -->
+      <aside class="slicer-rail" id="slicer-rail">
+        <div class="slicer-rail-title">⚙ FILTERS</div>
+        <div id="slicers"></div>
+      </aside>
+
+      <!-- Main content -->
+      <section>
+        <!-- Greeting -->
+        <div class="greeting">
+          <div>
+            <div class="greeting-title">🎉 Dashboard Ready</div>
+            <div class="greeting-sub" id="greeting-sub">Click any chart bar to drill into the underlying data, or use filters to slice.</div>
+          </div>
+        </div>
+
+        <!-- Insight banner -->
+        <div class="insight" id="insight-banner">
+          <div class="insight-icon">💡</div>
+          <div class="insight-text" id="insight-text"><strong>Loading...</strong></div>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <!-- Row: area chart + donut -->
+        <div class="row-2col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Revenue Trend</div>
+              <button class="icon-btn" title="Click bars to drill in">🔍</button>
+            </div>
+            <div id="chart-revenue" class="chart-area"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Distribution</div>
+            </div>
+            <div id="chart-donut" class="chart-area"></div>
+          </div>
+        </div>
+
+        <!-- Bar chart + Anomalies table -->
+        <div class="row-2col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Breakdown</div>
+            </div>
+            <div id="chart-bar" class="chart-area"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Anomalies <span id="anomaly-count" class="status-pill error">0</span></div>
+            </div>
+            <table class="data-table" id="anomaly-table">
+              <thead><tr><th>Column</th><th>Value</th><th>Type</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- Progress overlay -->
+<div id="progress" class="progress-overlay hidden">
+  <div class="progress-card">
+    <div class="progress-spinner"></div>
+    <div class="progress-title" id="progress-title">Analyzing...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-step" id="progress-step">Initializing</div>
+  </div>
+</div>
+
+<!-- Drilldown modal -->
+<div class="modal-overlay" id="drilldown-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📊 Drilldown: <strong id="drilldown-title">—</strong></div>
+      <button class="modal-close" onclick="closeDrilldown()">×</button>
+    </div>
+    <div class="modal-body" id="drilldown-body"></div>
+    <div class="modal-footer" id="drilldown-footer">—</div>
+  </div>
+</div>
+
+<!-- Cmd+K palette -->
+<div class="cmd-palette" id="cmd-palette">
+  <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a command...">
+  <div class="cmd-results" id="cmd-results"></div>
+</div>
+
+<!-- Chat -->
+<button class="chat-fab" onclick="toggleChat()">💬</button>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-head">
+    <span class="dot"></span>
+    <span class="title">Ask your data</span>
+    <span class="sub" id="chat-status">ready</span>
+  </div>
+  <div class="chat-msgs" id="chat-msgs">
+    <div class="msg system">Upload a file, then ask anything.</div>
+  </div>
+  <div class="chat-sugg" id="chat-sugg"></div>
+  <div class="chat-in">
+    <input type="text" id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">→</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════ */
+let currentJobId = null;
+let currentData = null;        // Full session result
+let activeFilters = {};        // {region: "APAC", segment: "B2B"}
+let filterDebounce = null;     // debounce rapid slicer clicks
+let drilldownChart = null;     // remembers which chart was clicked
+
+const COLORS = {
+  primary: '#5070E0', pink: '#FD7E9D', orange: '#F09040',
+  teal: '#21D1D1', violet: '#A87EC9', success: '#22C55E',
+  error: '#EF4444', warning: '#F59E0B',
+};
+const PALETTE = [COLORS.primary, COLORS.pink, COLORS.orange, COLORS.teal, COLORS.violet];
+
+/* ═══ THEME — REAL, not a toast ═══ */
+function getTheme() {
+  return localStorage.getItem('datalens-theme') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('datalens-theme', theme);
+  // Re-render charts so Plotly picks up new grid colors
+  if (currentData) renderCharts();
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  showToast(`Switched to ${next} mode`, 1500);
+}
+
+/* ═══ CMD-K PALETTE — REAL ═══ */
+const CMD_ACTIONS = [
+  { name: 'Toggle theme', shortcut: 'T', action: toggleTheme },
+  { name: 'Reset all filters', shortcut: 'Esc', action: clearAllFilters },
+  { name: 'New file', shortcut: 'N', action: resetAll },
+  { name: 'Download .pbit (real PowerBI)', shortcut: 'P', action: downloadPBIX },
+  { name: 'Download standalone HTML ZIP', shortcut: 'H', action: downloadDashboard },
+  { name: 'Print / PDF', shortcut: 'L', action: () => window.print() },
+  { name: 'Toggle chat panel', shortcut: 'C', action: toggleChat },
+];
+function openCmdK() {
+  const p = document.getElementById('cmd-palette');
+  p.classList.add('open');
+  const input = document.getElementById('cmd-input');
+  input.value = '';
+  input.focus();
+  renderCmdResults('');
+}
+function closeCmdK() { document.getElementById('cmd-palette').classList.remove('open'); }
+function renderCmdResults(query) {
+  const results = CMD_ACTIONS.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
+  document.getElementById('cmd-results').innerHTML = results.map((a, i) => `
+    <div class="cmd-item${i === 0 ? ' selected' : ''}" onclick="cmdRun(${CMD_ACTIONS.indexOf(a)})">
+      <span>${a.name}</span>
+      <span class="kbd">${a.shortcut}</span>
+    </div>
+  `).join('') || '<div class="cmd-item">No matches</div>';
+}
+function cmdRun(idx) {
+  CMD_ACTIONS[idx].action();
+  closeCmdK();
+}
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCmdK(); }
+  if (e.key === 'Escape') closeCmdK();
+  // Cmd + letter shortcuts
+  if ((e.metaKey || e.ctrlKey) && CMD_ACTIONS.find(a => a.shortcut.toLowerCase() === e.key.toLowerCase())) {
+    e.preventDefault();
+    CMD_ACTIONS.find(a => a.shortcut.toLowerCase() === e.key.toLowerCase()).action();
+  }
+});
+document.getElementById('cmd-input').addEventListener('input', e => renderCmdResults(e.target.value));
+document.getElementById('cmd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const sel = document.querySelector('.cmd-item.selected');
+    if (sel) sel.click();
+  }
+});
+
+/* ═══ BOOT ═══ */
+window.addEventListener('load', async () => {
+  applyTheme(getTheme());
+  await checkHealth();
+  document.getElementById('file-input').addEventListener('change', e => handleFileSelection(e.target.files));
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFileSelection(e.dataTransfer.files);
+  });
+});
+
+/* ═══ MULTI-FILE UPLOAD (Sprint 3) ═══ */
+let selectedFiles = [];
+function handleFileSelection(fileList) {
+  // Add new files to selection
+  for (const f of fileList) {
+    if (selectedFiles.length >= 10) {
+      showToast('Max 10 files allowed', 3000, 'error');
+      break;
+    }
+    selectedFiles.push(f);
+  }
+  renderFileList();
+  if (selectedFiles.length >= 2) {
+    // Auto-trigger multi-file upload
+    uploadMultipleFiles();
+  } else if (selectedFiles.length === 1) {
+    showToast('Add at least 1 more file for multi-file mode. Or wait, single-file upload coming.', 3000, 'info');
+  }
+}
+
+function renderFileList() {
+  const list = document.getElementById('multi-file-list');
+  const btn = document.getElementById('multi-upload-btn');
+  if (selectedFiles.length === 0) {
+    list.style.display = 'none';
+    btn.style.display = 'none';
+    return;
+  }
+  list.style.display = 'block';
+  btn.style.display = 'inline-block';
+  list.innerHTML = selectedFiles.map((f, i) => `
+    <div class="file-chip">
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${(f.size / 1024).toFixed(1)} KB</span>
+      <button class="file-remove" onclick="removeFile(${i})">×</button>
+    </div>
+  `).join('') + `
+    <button class="btn-primary" onclick="uploadMultipleFiles()" style="margin-top:8px;">
+      ${selectedFiles.length === 1 ? 'Upload 1 file' : `Upload ${selectedFiles.length} files & detect relationships`}
+    </button>
+  `;
+}
+
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  renderFileList();
+}
+
+function triggerMultiUpload() {
+  document.getElementById('file-input').click();
+}
+
+async function uploadMultipleFiles() {
+  if (selectedFiles.length < 2) {
+    showToast('Need at least 2 files for multi-file mode', 3000, 'error');
+    return;
+  }
+  showProgress(`Uploading ${selectedFiles.length} files...`, 5, 'Detecting relationships...');
+  const fd = new FormData();
+  for (const f of selectedFiles) {
+    fd.append('files', f);
+  }
+  try {
+    const r = await fetch('/api/analyze/multi', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    currentJobId = d.job_id;
+    pollJob();
+  } catch (e) {
+    showToast('Upload failed: ' + e.message, 5000, 'error');
+  }
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    if (d.ollama_cloud) showToast(`● Ollama Cloud live · ${d.models_registered} models`, 3000, 'success');
+  } catch (e) {}
+}
+
+/* ═══ UPLOAD ═══ */
+async function uploadFile(file) {
+  showProgress('Uploading ' + file.name, 5, 'Sending...');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/analyze', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    currentJobId = d.job_id;
+    pollJob();
+  } catch (e) {
+    hideProgress();
+    showToast('Upload failed: ' + e.message, 5000, 'error');
+  }
+}
+
+async function pollJob() {
+  showProgress('Analyzing your data', 15, 'Parsing file...');
+  const poll = async () => {
+    try {
+      const r = await fetch('/api/status/' + currentJobId);
+      const d = await r.json();
+      if (d.status === 'failed') throw new Error(d.error);
+      if (d.status === 'completed') {
+        currentData = d.result;
+        hideProgress();
+        renderDashboard();
+        return;
+      }
+      const pct = Math.min(92, 15 + (d.progress || 1) * 12);
+      showProgress('Analyzing your data', pct, d.message || 'Processing...');
+      setTimeout(poll, 1500);
+    } catch (e) {
+      hideProgress();
+      showToast('Analysis failed: ' + e.message, 5000, 'error');
+    }
+  };
+  poll();
+}
+
+function showProgress(title, pct, step) {
+  document.getElementById('progress').classList.remove('hidden');
+  document.getElementById('progress-title').textContent = title;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-step').textContent = step;
+}
+function hideProgress() { document.getElementById('progress').classList.add('hidden'); }
+
+/* ═══ RENDER DASHBOARD ═══ */
+function renderDashboard() {
+  document.getElementById('upload-zone').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('topbar-title').textContent = 'Dashboard';
+  document.getElementById('btn-reset').style.display = '';
+  document.getElementById('btn-pbix').style.display = '';
+  document.getElementById('btn-zip').style.display = '';
+
+  try { renderSlicers(); } catch (e) { console.error('slicers', e); }
+  try { renderKPIs(); } catch (e) { console.error('kpi', e); }
+  try { renderInsight(); } catch (e) { console.error('insight', e); }
+  try { renderCharts(); } catch (e) { console.error('charts', e); }
+  try { renderAnomalyTable(); } catch (e) { console.error('anomalies', e); }
+  try { renderFilterBar(); } catch (e) { console.error('filterbar', e); }
+  try { renderSugg(); } catch (e) { console.error('sugg', e); }
+
+  document.getElementById('greeting-sub').textContent =
+    `${currentData.metadata?.analyzed_rows || '?'} rows · ${currentData.charts?.length || 0} charts · ${currentData.data_health_score || '?'}/100 health`;
+  showToast('Dashboard ready — try the slicers on the left', 4000, 'success');
+}
+
+/* ═══ SLICERS — REAL cross-filtering ═══ */
+function renderSlicers() {
+  const div = document.getElementById('slicers');
+  div.innerHTML = '';
+  const filterable = currentData.filterable_columns || [];
+  if (filterable.length === 0) {
+    div.innerHTML = '<div style="color: var(--text-muted); font-size: 11px;">No filterable columns</div>';
+    return;
+  }
+  // Show top 4 filterable columns
+  for (const f of filterable.slice(0, 4)) {
+    const sec = document.createElement('div');
+    sec.className = 'slicer-section';
+    sec.innerHTML = `
+      <div class="slicer-label">${f.column} <span class="count">${f.unique_count}</span></div>
+      <div class="slicer-values" id="sl-${f.column}"></div>
+    `;
+    div.appendChild(sec);
+    const list = sec.querySelector('.slicer-values');
+    // "All" reset
+    const all = document.createElement('div');
+    all.className = 'slicer-item';
+    if (!activeFilters[f.column]) all.classList.add('active');
+    all.innerHTML = '<span>All</span>';
+    all.onclick = () => clearFilter(f.column);
+    list.appendChild(all);
+    // Values
+    for (const v of f.values) {
+      const item = document.createElement('div');
+      item.className = 'slicer-item';
+      if (activeFilters[f.column] === v) item.classList.add('active');
+      item.textContent = v;
+      item.onclick = () => setFilter(f.column, v);
+      list.appendChild(item);
+    }
+  }
+}
+
+function setFilter(col, val) {
+  activeFilters[col] = val;
+  // Update UI immediately
+  document.querySelectorAll(`#sl-${col} .slicer-item`).forEach(el => {
+    el.classList.toggle('active', el.textContent === val);
+  });
+  applyFilters();
+}
+
+function clearFilter(col) {
+  delete activeFilters[col];
+  document.querySelectorAll(`#sl-${col} .slicer-item`).forEach((el, i) => {
+    el.classList.toggle('active', i === 0);
+  });
+  applyFilters();
+}
+
+function clearAllFilters() {
+  activeFilters = {};
+  renderSlicers();
+  applyFilters();
+  showToast('All filters cleared', 1500);
+}
+
+async function applyFilters() {
+  if (!currentJobId) return;
+  // Show loading state
+  document.getElementById('kpi-grid').classList.add('loading');
+  document.getElementById('dashboard').classList.add('loading');
+
+  // Debounce rapid clicks
+  clearTimeout(filterDebounce);
+  filterDebounce = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/filter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: currentJobId, filters: activeFilters }),
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error);
+      // Update currentData with filtered charts/anomalies (preserve records for drilldown)
+      currentData.charts = d.charts || [];
+      currentData.anomalies = d.anomalies || [];
+      currentData._filter_stats = d.stats;
+      renderKPIs();
+      renderCharts();
+      renderAnomalyTable();
+      renderFilterBar();
+      showToast(`Filtered: ${d.stats.filtered_rows} / ${d.stats.total_rows} rows (${d.stats.filter_pct}%)`, 1500, 'success');
+    } catch (e) {
+      showToast('Filter error: ' + e.message, 3000, 'error');
+    } finally {
+      document.getElementById('kpi-grid').classList.remove('loading');
+      document.getElementById('dashboard').classList.remove('loading');
+    }
+  }, 200);
+}
+
+function renderFilterBar() {
+  const bar = document.getElementById('filter-bar');
+  const stats = currentData._filter_stats;
+  const keys = Object.keys(activeFilters);
+  if (keys.length === 0) {
+    bar.innerHTML = stats ?
+      `<div class="filter-summary">Showing <strong>${stats.total_rows}</strong> rows (no filters)</div>` :
+      '';
+    return;
+  }
+  let html = keys.map(k => `
+    <span class="filter-chip">
+      ${k}: <strong>${activeFilters[k]}</strong>
+      <span class="x" onclick="clearFilter('${k}')">×</span>
+    </span>
+  `).join('');
+  html += '<button class="filter-clear" onclick="clearAllFilters()">Clear all</button>';
+  if (stats) {
+    html += `<div class="filter-summary">Showing <strong>${stats.filtered_rows}</strong> of <strong>${stats.total_rows}</strong> rows (${stats.filter_pct}%)</div>`;
+  }
+  bar.innerHTML = html;
+}
+
+/* ═══ KPIs ═══ */
+function renderKPIs() {
+  const grid = document.getElementById('kpi-grid');
+  const data = (currentData.charts || []).filter(c => c.chart_type === 'kpi_card');
+  const fallback = data.length < 4 ? (currentData.charts || []).slice(0, 4 - data.length) : [];
+  const all = [...data, ...fallback];
+  const icons = ['💰', '📦', '👥', '💳'];
+  const tints = ['tint-pink', 'tint-blue', 'tint-mint', 'tint-orange'];
+  if (all.length === 0) {
+    grid.innerHTML = '<div style="grid-column: span 4; text-align: center; color: var(--text-muted); padding: 20px;">No KPIs for this filter</div>';
+    return;
+  }
+  grid.innerHTML = all.map((k, i) => {
+    const val = k.data?.[0]?.y;
+    const valStr = typeof val === 'number' ? formatNumber(val) : (val || '—');
+    return `
+      <div class="kpi-card k${(i % 4) + 1}">
+        <div class="kpi-top">
+          <div class="kpi-icon ${tints[i % 4]}">${icons[i % 4]}</div>
+        </div>
+        <div class="kpi-label">${k.title || 'KPI'}</div>
+        <div class="kpi-value">${valStr}</div>
+        <div class="kpi-meta">${k.aggregation || 'mean'} of ${k.y_col || ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderInsight() {
+  const summary = currentData.executive_summary || 'Analysis complete.';
+  const insights = currentData.insights?.l3_insights || [];
+  const top = insights[0]?.insight || summary;
+  document.getElementById('insight-text').innerHTML = `<strong>Key Insight:</strong> ${top}`;
+}
+
+/* ═══ CHARTS — clickable for drilldown ═══ */
+function renderCharts() {
+  const data = (currentData.charts || []).filter(c => c.chart_type !== 'kpi_card');
+  const theme = getTheme();
+  const textColor = theme === 'dark' ? '#B0B6D6' : '#5A5A5A';
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim();
+
+  // Revenue chart (line)
+  const line = data.find(c => c.chart_type === 'line') || data.find(c => c.chart_type === 'bar');
+  if (line && line.data) {
+    Plotly.newPlot('chart-revenue', [{
+      type: 'scatter', mode: 'lines+markers',
+      x: line.data.map(d => d.x), y: line.data.map(d => d.y),
+      line: { color: COLORS.primary, width: 3, shape: 'spline' },
+      marker: { color: COLORS.primary, size: 8, line: { color: '#fff', width: 2 } },
+      fill: 'tozeroy', fillcolor: 'rgba(80,112,224,0.12)',
+      hovertemplate: '<b>%{x}</b><br>Value: %{y:,.2f}<extra></extra>'
+    }], {
+      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', size: 11, color: textColor },
+      margin: { l: 50, r: 16, t: 8, b: 36 },
+      xaxis: { gridcolor: gridColor, zeroline: false, showline: false },
+      yaxis: { gridcolor: gridColor, zeroline: false, showline: false },
+      showlegend: false,
+    }, { displayModeBar: false, responsive: true });
+    chartMetadata['chart-revenue'] = { x_col: line.x_col, y_col: line.y_col };
+    setupChartClick('chart-revenue');
+  } else {
+    document.getElementById('chart-revenue').innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-muted);font-size:12px;">No data</div>';
+  }
+
+  // Donut
+  const pie = data.find(c => c.chart_type === 'pie' || c.chart_type === 'donut') || data[0];
+  if (pie && pie.data) {
+    Plotly.newPlot('chart-donut', [{
+      type: 'pie', hole: 0.6,
+      labels: pie.data.map(d => d.x),
+      values: pie.data.map(d => d.y),
+      marker: { colors: PALETTE, line: { color: '#FFFFFF', width: 2 } },
+      textinfo: 'percent', textfont: { color: '#fff', size: 11 },
+      hovertemplate: '<b>%{label}</b><br>%{percent}<extra></extra>',
+    }], {
+      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', size: 11, color: textColor },
+      margin: { l: 0, r: 0, t: 0, b: 0 },
+      showlegend: true,
+      legend: { orientation: 'h', y: -0.1, font: { size: 10 } }
+    }, { displayModeBar: false, responsive: true });
+    chartMetadata['chart-donut'] = { x_col: pie.x_col, y_col: pie.y_col };
+    setupChartClick('chart-donut');
+  } else {
+    document.getElementById('chart-donut').innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-muted);font-size:12px;">No data</div>';
+  }
+
+  // Bar chart
+  const bar = data.find(c => c.chart_type === 'bar' && c !== line) || data.find(c => c.chart_type === 'bar') || data[1] || data[0];
+  if (bar && bar.data) {
+    Plotly.newPlot('chart-bar', [{
+      type: 'bar', x: bar.data.map(d => d.x), y: bar.data.map(d => d.y),
+      marker: { color: bar.data.map((_, i) => PALETTE[i % PALETTE.length]), line: { color: '#FFFFFF', width: 0 } },
+      text: bar.data.map(d => formatNumber(d.y)),
+      textposition: 'outside',
+      textfont: { size: 10, color: textColor },
+      hovertemplate: '<b>%{x}</b><br>Value: %{y:,.2f}<extra></extra>'
+    }], {
+      paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', size: 11, color: textColor },
+      margin: { l: 50, r: 16, t: 8, b: 60 },
+      xaxis: { gridcolor: gridColor, tickangle: -25 },
+      yaxis: { gridcolor: gridColor },
+      showlegend: false, bargap: 0.4,
+    }, { displayModeBar: false, responsive: true });
+    chartMetadata['chart-bar'] = { x_col: bar.x_col, y_col: bar.y_col };
+    setupChartClick('chart-bar');
+  } else {
+    document.getElementById('chart-bar').innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-muted);font-size:12px;">No data</div>';
+  }
+}
+
+const chartMetadata = {};
+
+/* Wire up Plotly click → drilldown. Plotly's own event system, not DOM onclick. */
+function setupChartClick(chartId) {
+  const gd = document.getElementById(chartId);
+  if (!gd || !gd.on) return;
+  gd.removeAllListeners?.('plotly_click');
+  gd.on('plotly_click', (data) => {
+    const point = data.points?.[0];
+    if (!point) return;
+    const meta = chartMetadata[chartId];
+    if (!meta || !meta.x_col) return;
+    const xVal = point.x;
+    drilldownColumn(meta.x_col, xVal);
+  });
+}
+
+/* ═══ ANOMALY TABLE — clickable rows ═══ */
+function renderAnomalyTable() {
+  const tbody = document.querySelector('#anomaly-table tbody');
+  const countEl = document.getElementById('anomaly-count');
+  const anomalies = currentData.anomalies || [];
+  countEl.textContent = anomalies.length;
+  if (anomalies.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">No anomalies for current filter</td></tr>';
+    return;
+  }
+  tbody.innerHTML = anomalies.slice(0, 8).map(a => {
+    const type = a.anomaly_type || 'flag';
+    const pillClass = type.includes('high') ? 'warning' : type.includes('low') ? 'info' : 'error';
+    const valStr = typeof a.value === 'number' ? formatNumber(a.value) : a.value;
+    return `<tr onclick="drilldownColumn('${a.column}')">
+      <td><strong>${a.column || '—'}</strong></td>
+      <td style="font-family:'JetBrains Mono',monospace;">${valStr}</td>
+      <td><span class="status-pill ${pillClass}">${type}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══ DRILLDOWN — click any chart bar (wired via Plotly event in setupChartClick) ═══ */
+async function drilldownColumn(column, value) {
+  if (!currentJobId) return;
+  if (value === undefined) {
+    // Open modal asking for value or showing top 10
+    openDrilldown({ column, value: '?', rows: [], total: 0 });
+    return;
+  }
+  showToast(`Loading rows for ${column} = ${value}...`, 1500);
+  try {
+    const r = await fetch('/api/drilldown', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: currentJobId, column, value, filters: activeFilters, limit: 50 }),
+    });
+    const d = await r.json();
+    openDrilldown(d);
+  } catch (e) {
+    showToast('Drilldown error: ' + e.message, 3000, 'error');
+  }
+}
+
+function openDrilldown(data) {
+  const modal = document.getElementById('drilldown-modal');
+  const title = document.getElementById('drilldown-title');
+  const body = document.getElementById('drilldown-body');
+  const footer = document.getElementById('drilldown-footer');
+  title.textContent = `${data.column} = ${data.value}`;
+  if (!data.rows || data.rows.length === 0) {
+    body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;">No matching rows</div>';
+    footer.textContent = '0 rows';
+  } else {
+    const cols = Object.keys(data.rows[0]);
+    body.innerHTML = `
+      <table class="data-table">
+        <thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${data.rows.map(r => `<tr>${cols.map(c => `<td>${formatCell(r[c])}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    `;
+    footer.textContent = `Showing ${data.shown} of ${data.total} matching rows · Filters: ${JSON.stringify(activeFilters)}`;
+  }
+  modal.classList.add('open');
+}
+
+function closeDrilldown() {
+  document.getElementById('drilldown-modal').classList.remove('open');
+}
+document.getElementById('drilldown-modal').addEventListener('click', e => {
+  if (e.target.id === 'drilldown-modal') closeDrilldown();
+});
+
+function formatCell(v) {
+  if (v === null || v === undefined) return '<span style="color:var(--text-muted)">—</span>';
+  if (typeof v === 'number') return v.toLocaleString();
+  return v;
+}
+
+/* ═══ CHAT ═══ */
+function renderSugg() {
+  const sugg = ['What was the highest value?', 'Why is it unusual?', 'Show trends', 'Key takeaway?'];
+  document.getElementById('chat-sugg').innerHTML = sugg.map(s =>
+    `<button class="sugg" onclick="askQ('${s}')">${s}</button>`
+  ).join('');
+}
+function askQ(q) {
+  document.getElementById('chat-input').value = q;
+  sendChat();
+}
+function toggleChat() { document.getElementById('chat-panel').classList.toggle('open'); }
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q || !currentJobId) return;
+  addMsg(q, 'user');
+  input.value = '';
+  document.getElementById('chat-status').textContent = 'thinking...';
+  try {
+    const r = await fetch('/api/ask/sync', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: currentJobId, question: q })
+    });
+    const d = await r.json();
+    if (d.success) addMsg(d.answer, 'ai');
+    else addMsg('Error: ' + d.error, 'ai');
+  } catch (e) { addMsg('Error: ' + e.message, 'ai'); }
+  document.getElementById('chat-status').textContent = 'ready';
+  input.focus();
+}
+function addMsg(text, who) {
+  const m = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  div.textContent = text;
+  m.appendChild(div);
+  m.scrollTop = m.scrollHeight;
+}
+
+/* ═══ EXPORT .pbix ═══ */
+async function downloadPBIX() {
+  if (!currentJobId) return showToast('No data', 2000, 'warning');
+  showToast('Generating real .pbit file (pbi-tools)...', 3000, 'info');
+  try {
+    // Use the REAL .pbit endpoint (pbi-tools)
+    const r = await fetch('/api/export/pbix?session_id=' + currentJobId);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error); }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `datalens-dashboard-${currentJobId.slice(0, 8)}.pbit`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 100);
+    showToast('Downloaded! Open in PowerBI Desktop — fully editable DAX, data model, and visuals.', 5000, 'success');
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 4000, 'error');
+  }
+}
+
+// Fallback: standalone HTML dashboard ZIP
+async function downloadDashboard() {
+  if (!currentJobId) return showToast('No data', 2000, 'warning');
+  showToast('Generating standalone HTML dashboard...', 2000, 'info');
+  try {
+    const r = await fetch('/api/export/dashboard?session_id=' + currentJobId);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error); }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `datalens-dashboard-${currentJobId.slice(0, 8)}.zip`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 100);
+    showToast('Downloaded! Extract the ZIP and open the HTML in any browser.', 4000, 'success');
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 4000, 'error');
+  }
+}
+
+/* ═══ UTILS ═══ */
+function formatNumber(n) {
+  if (typeof n !== 'number') return n;
+  if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  if (Number.isInteger(n)) return n.toString();
+  return n.toFixed(2);
+}
+
+function showToast(msg, duration = 2500, type = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const div = document.createElement('div');
+  div.className = 'toast ' + type;
+  div.textContent = msg;
+  wrap.appendChild(div);
+  setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.3s'; setTimeout(() => div.remove(), 300); }, duration);
+}
+
+function resetAll() {
+  currentJobId = null; currentData = null; activeFilters = {};
+  document.getElementById('upload-zone').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('kpi-grid').innerHTML = '';
+  document.getElementById('slicers').innerHTML = '';
+  document.getElementById('filter-bar').innerHTML = '';
+  document.getElementById('btn-reset').style.display = 'none';
+  document.getElementById('btn-pbix').style.display = 'none';
+  document.getElementById('btn-zip').style.display = 'none';
+  document.getElementById('topbar-title').textContent = 'Welcome back, Raghav ✨';
+  document.getElementById('file-input').value = '';
+  showToast('Reset — upload a new file', 2000);
+}
+</script>
+</body>
+</html>

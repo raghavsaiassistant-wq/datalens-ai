@@ -9,8 +9,11 @@ import scipy.stats as stats
 from dataclasses import dataclass
 from typing import List, Optional, Any
 import pandas as pd
-from ai.nim_client import NIMClient
+import logging
+from ai.ollama_client import OllamaClient
 from parsers.base_parser import DataProfile
+
+logger = logging.getLogger("AnomalyDetector")
 
 @dataclass
 class AnomalyFlag:
@@ -25,7 +28,7 @@ class AnomalyFlag:
 class AnomalyDetector:
     """Statistical detector combined with AI-generated business explanations."""
 
-    def detect(self, profile: DataProfile, nim_client: NIMClient) -> List[AnomalyFlag]:
+    def detect(self, profile: DataProfile, ollama_client: OllamaClient = None) -> List[AnomalyFlag]:
         """Runs the 5-step anomaly detection pipeline."""
         df = profile.df
         anomalies: List[AnomalyFlag] = []
@@ -138,14 +141,28 @@ class AnomalyDetector:
         anomalies.sort(key=lambda x: severity_map.get(x.severity, 4))
         anomalies = anomalies[:10]
 
-        # STEP 5: AI explanation
+        # STEP 5: AI explanation (uses Ollama reasoner role)
+        # If we're in a sync context, use asyncio.run. If in an async context,
+        # skip AI explanation here — pipeline.run() handles it in parallel instead.
+        import inspect
+        in_async = inspect.iscoroutinefunction(inspect.currentframe().f_back) if inspect.currentframe() else False
         for flag in anomalies:
             try:
-                system_prompt = "You are a business analyst. Explain data anomalies in plain English for non-technical managers. Be concise — one sentence only."
-                user_prompt = f"Dataset: {profile.file_name}. Column: {flag.column}. Anomaly: {flag.anomaly_type}. Value: {flag.value}. Explain why this is concerning for business."
-                resp = nim_client.chat(model_name="mistral_7b", user_prompt=user_prompt, system_prompt=system_prompt, max_tokens=60)
-                flag.explanation = resp.strip()
-            except Exception:
+                if ollama_client and not in_async:
+                    system_prompt = "You are a business analyst. Explain data anomalies in plain English for non-technical managers. Be concise — one sentence only."
+                    user_prompt = f"Dataset: {profile.file_name}. Column: {flag.column}. Anomaly: {flag.anomaly_type}. Value: {flag.value}. Explain why this is concerning for business."
+                    import asyncio
+                    resp = asyncio.run(ollama_client.chat(
+                        "reasoner",
+                        [{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": user_prompt}],
+                        max_tokens=60,
+                    ))
+                    flag.explanation = resp.strip()
+                else:
+                    flag.explanation = f"Detected {flag.anomaly_type} in {flag.column} with value {flag.value}."
+            except Exception as e:
+                logger.warning(f"Anomaly explanation failed: {e}")
                 flag.explanation = f"Detected {flag.anomaly_type} in {flag.column} with value {flag.value}."
 
         return anomalies

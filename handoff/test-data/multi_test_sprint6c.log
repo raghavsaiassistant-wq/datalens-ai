@@ -1,0 +1,58 @@
+======================================================================
+TESTING /api/analyze/multi (5 CSVs)
+======================================================================
+
+[1] Uploading 5 files...
+  Status: 202
+  Response: {"file_count":5,"job_id":"d4d31643ee864f36b768bf81307991ba","success":true}
+
+  Job ID: d4d31643ee864f36b768bf81307991ba
+  Upload time: 2.09s
+
+[2] Polling for completion...
+  [1] processing | 5/6 | ✨ Generating AI insights...
+  [2] processing | 5/6 | ✨ Generating AI insights...
+  [3] processing | 5/6 | ✨ Generating AI insights...
+  [4] processing | 5/6 | ✨ Generating AI insights...
+  [5] processing | 5/6 | ✨ Generating AI insights...
+  [6] completed | 6/6 | ✅ Multi-file analysis complete
+
+[3] Get result...
+  Mode: multi_file
+  Has multi_file: True
+  Executive summary: Analysis complete. Dataset has 500 rows and 16 columns.
+  Key findings: 0
+  Anomalies: 10
+  Charts: 3
+
+[4] Multi-file metadata:
+  Files: 5
+  Total rows: 785
+  Relationships detected: 4
+    customers.region -> regions.region_name (many_to_one, conf=1.0)
+    order_items.order_id -> orders.order_id (many_to_one, conf=1.0)
+    order_items.product_id -> products.product_id (many_to_one, conf=1.0)
+    orders.customer_id -> customers.customer_id (one_to_many, conf=0.976)
+  Fact table: order_items
+  Dimensions: ['customers', 'orders', 'products', 'regions']
+  Unified: 500 rows × 16 cols
+
+[5] Test multi profile endpoint...
+  Status: 200
+  Success: True
+  File count: 5
+
+[6] Test /api/dataset/d4d31643ee864f36b768bf81307991ba...
+  Success: True
+  Records: 500
+  Columns: 16
+  Filterable: 11
+
+[7] Test chat with data...
+  Success: True
+  Answer: The provided dataset context does not include total revenue figures or any region performance data. Therefore, I cannot determine the total revenue or the best-performing region from the given information.
+
+======================================================================
+DONE - Save job_id for later
+JOB_ID=d4d31643ee864f36b768bf81307991ba
+======================================================================

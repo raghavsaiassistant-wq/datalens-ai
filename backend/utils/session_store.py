@@ -5,7 +5,7 @@ In-memory store for analysis results. Allows Q&A to reference previously analyze
 """
 import threading
 import time
-from typing import Optional, Dict
+from typing import Optional
 
 CLEANUP_INTERVAL_SECONDS = 1800  # run cleanup every 30 minutes
 

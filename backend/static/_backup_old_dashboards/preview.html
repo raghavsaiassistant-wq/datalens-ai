@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DataLens AI — Design Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #F8F8F8; color: #2C2C2C; padding: 32px; line-height: 1.6; }
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, #5070E0, #21D1D1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: #5A5A5A; margin-bottom: 32px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-top: 24px; }
+  .card { background: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
+  .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #2C2C2C; }
+  .card p { color: #5A5A5A; font-size: 13px; margin-bottom: 12px; }
+  .btn { display: inline-block; background: #5070E0; color: white; padding: 9px 18px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 12px; }
+  .btn:hover { background: #4070E0; }
+  .btn.alt { background: #21D1D1; }
+  .btn.alt2 { background: #FD7E9D; }
+  .btn.alt3 { background: #2C2C2C; }
+  .status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .status.live { background: #DCFCE7; color: #22C55E; }
+  .status.new  { background: #EFF7FF; color: #5070E0; }
+  .status.old  { background: #F0F0F0; color: #9CA3AF; }
+  .color-palette { display: flex; gap: 6px; margin-top: 10px; }
+  .swatch { flex: 1; height: 40px; border-radius: 6px; display: grid; place-items: center; font-size: 9px; color: white; font-family: 'JetBrains Mono', monospace; }
+  iframe { width: 100%; height: 600px; border: 1px solid #EAEAEA; border-radius: 12px; background: white; }
+  .palette-card { padding: 20px; }
+  .tokens { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5A5A5A; margin-top: 8px; line-height: 1.8; }
+  .tokens strong { color: #5070E0; }
+  ul { color: #5A5A5A; font-size: 12px; padding-left: 18px; margin-top: 6px; }
+  ul li { margin-bottom: 4px; }
+  .badge-new { background: #FD7E9D; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; font-weight: 800; margin-left: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>🎨 DataLens AI — Dashboard Design Preview</h1>
+<p class="subtitle">3 versions available — pick your favorite</p>
+
+<div class="grid">
+  <div class="card">
+    <h2>🆕 Figma Style <span class="badge-new">NEW</span></h2>
+    <p>Light theme matching Figma "Analytics Dashboard (Community)" exactly. Top-bar layout (no sidebar), 4 KPI cards with tinted icon chips, area chart + donut, sparklines, anomaly table.</p>
+    <span class="status new">● FIGMA EXACT</span>
+    <p style="margin-top:14px"><a class="btn" href="/dashboard-figma" target="_blank">Open Figma Style →</a></p>
+  </div>
+
+  <div class="card">
+    <h2>🌙 Sneat Style</h2>
+    <p>Subagent's Sneat Vuetify-style rebuild. Dark sidebar, multi-color cards, Apex-Charts aesthetic (built with Plotly). Polished but doesn't match Figma tokens.</p>
+    <span class="status live">● LIVE</span>
+    <p style="margin-top:14px"><a class="btn alt3" href="/dashboard-light" target="_blank">Open Sneat Style →</a></p>
+  </div>
+
+  <div class="card">
+    <h2>🟪 Original Dark</h2>
+    <p>The first dashboard version. Vivid colors, gradient mesh, Plotly charts. Functional but not as polished as the Figma/Sneat versions.</p>
+    <span class="status old">LEGACY</span>
+    <p style="margin-top:14px"><a class="btn alt2" href="/dashboard" target="_blank">Open Original →</a></p>
+  </div>
+
+  <div class="card">
+    <h2>🧪 Test Console</h2>
+    <p>JSON-style file upload tester. Drag a file, see the analysis JSON response, ask chat questions. Good for debugging.</p>
+    <span class="status live">● LIVE</span>
+    <p style="margin-top:14px"><a class="btn" href="/test" target="_blank">Open Test Console →</a></p>
+  </div>
+
+  <div class="card palette-card">
+    <h2>🎨 Figma Color Tokens</h2>
+    <p>Exact pixel-sampled from the Figma "Analytics Dashboard (Community)" thumbnail:</p>
+    <div class="color-palette">
+      <div class="swatch" style="background:#5070E0">5070E0</div>
+      <div class="swatch" style="background:#FD7E9D">FD7E9D</div>
+      <div class="swatch" style="background:#F09040">F09040</div>
+      <div class="swatch" style="background:#21D1D1">21D1D1</div>
+      <div class="swatch" style="background:#A87EC9">A87EC9</div>
+    </div>
+    <div class="tokens">
+      <strong>--primary</strong>      #5070E0<br>
+      <strong>--accent-pink</strong>  #FD7E9D<br>
+      <strong>--accent-orange</strong> #F09040<br>
+      <strong>--accent-teal</strong>  #21D1D1<br>
+      <strong>--accent-violet</strong> #A87EC9<br>
+      <strong>--bg-page</strong>     #F8F8F8<br>
+      <strong>--bg-card</strong>     #FFFFFF<br>
+      <strong>--text-primary</strong> #2C2C2C<br>
+      <strong>--text-muted</strong>  #9CA3AF
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>✨ Bonus Features (Figma)</h2>
+    <p>The new Figma-style dashboard has these:</p>
+    <ul>
+      <li>📅 Date range pill in top bar</li>
+      <li>🔔 Notification bell with dot</li>
+      <li>☀️ Theme toggle (placeholder for v1.1)</li>
+      <li>🎉 Greeting hero card with floating illustration</li>
+      <li>💡 Insight banner with primary color</li>
+      <li>📊 4 KPI cards (tinted icon chips per Figma spec)</li>
+      <li>📈 Tabbed Total Revenue chart (Income/Expenses/Profit)</li>
+      <li>🍩 Donut + legend in Order Statistics</li>
+      <li>📉 4 mini stat cards with sparklines</li>
+      <li>📋 Recent Anomalies data table</li>
+      <li>💬 Floating chat with 4 starter suggestions</li>
+      <li>🎯 Click any KPI → opens chat with prefilled question</li>
+      <li>🔢 Animated counter on KPI load (0 → value)</li>
+      <li>📥 Download standalone HTML ZIP</li>
+      <li>⌨️ Cmd+K command palette (v1.1 toast)</li>
+      <li>🍞 Toast notifications (top-right)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h2>📺 Live Preview: Figma Style</h2>
+  <p>The new light-themed dashboard. Upload a file to see the full analysis flow.</p>
+  <iframe src="/dashboard-figma" style="margin-top:12px;"></iframe>
+</div>
+
+</body>
+</html>
