@@ -23,7 +23,10 @@ class MultiFileStore:
 
     def __init__(self, base_dir: str = None):
         if base_dir is None:
-            base_dir = r"C:\James\engineering_lab\datalens-ai\data\multi_file_jobs"
+            # Default: <project_root>/data/multi_file_jobs
+            # Works on Windows + Linux, and follows the repo
+            project_root = Path(__file__).resolve().parents[2]
+            base_dir = str(project_root / "data" / "multi_file_jobs")
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"MultiFileStore initialized at {self.base_dir}")
