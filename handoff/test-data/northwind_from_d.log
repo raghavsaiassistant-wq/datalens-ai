@@ -1,0 +1,65 @@
+======================================================================
+SPRINT 9: Real data test (Northwind-style)
+======================================================================
+Files: 8
+  - categories.csv
+  - customers.csv
+  - employees.csv
+  - order_details.csv
+  - orders.csv
+  - products.csv
+  - shippers.csv
+  - suppliers.csv
+
+[1] Uploading 8 files...
+  Upload: 202 in 2.09s
+  Job ID: ff8fc565bef74eeeb6a68bf1ff2262be
+
+[2] Polling...
+  [2s] processing | 5/6 | ✨ Generating AI insights...
+  [9s] processing | 5/6 | ✨ Generating AI insights...
+  [16s] processing | 5/6 | ✨ Generating AI insights...
+  [23s] processing | 5/6 | ✨ Generating AI insights...
+  [30s] processing | 5/6 | 🎯 Synthesizing board-level decisions...
+  [37s] processing | 5/6 | 🎯 Synthesizing board-level decisions...
+  [44s] processing | 5/6 | 🎯 Synthesizing board-level decisions...
+  [51s] processing | 5/6 | 🎯 Synthesizing board-level decisions...
+  Done in 58.5s
+
+[3] Result...
+  Files unified: 8
+  Total rows: 276
+  Relationships detected: 8
+  Fact table: order_details
+  Dimensions: ['categories', 'customers', 'employees', 'orders', 'products', 'shippers', 'suppliers']
+  Unified: 179 rows × 37 cols
+
+[4] Detected relationships:
+  products.category_id -> categories.category_id (one_to_many, conf=1.00)
+  orders.employee_id -> employees.employee_id (one_to_many, conf=1.00)
+  order_details.order_id -> orders.order_id (many_to_one, conf=1.00)
+  order_details.product_id -> products.product_id (many_to_one, conf=1.00)
+  order_details.unit_price -> products.unit_price (many_to_one, conf=1.00)
+  orders.shipper_id -> shippers.shipper_id (many_to_one, conf=1.00)
+  products.supplier_id -> suppliers.supplier_id (many_to_one, conf=1.00)
+  orders.customer_id -> customers.customer_id (one_to_many, conf=0.94)
+
+[5] Data quality:
+  Overall score: 97.6/100
+  Total warnings: 4
+  Files analyzed: 8
+
+[6] Lineage:
+  Total columns tracked: 68
+  Passthrough: 60
+  Source files: ['customers', 'categories', 'products', 'orders', 'employees', 'suppliers', 'order_details', 'shippers']
+
+[7] AI Summary:
+  The catalog’s tight 10‑SKU focus masks a concentration risk on the $12 product, which could be cannibalizing higher‑margin items.
+
+[8] Job ID saved: ff8fc565bef74eeeb6a68bf1ff2262be
+
+[9] Checking persistence...
+  ✅ Persisted: 8 files
+
+⏱ Total test time: 1784013892.9s

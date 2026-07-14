@@ -1,0 +1,7 @@
+employee_id,last_name,first_name,title,birth_date,hire_date,address,city,region,postal_code,country,home_phone,reports_to,notes,photo_path
+1,Davolio,Nancy,Sales Representative,1948-12-08,1992-05-01,"507 - 20th Ave. E.
+Apt. 2A",Seattle,WA,98122,USA,(206) 555-9857,1,Education includes a BA in psychology.,5
+2,Fuller,Andrew,"Vice President, Sales",1952-02-19,1992-08-14,908 W. Capital Way,Tacoma,WA,98401,USA,(206) 555-9482,1,Andrew received his BTS commercial.,4
+3,Leverling,Janet,Sales Representative,1963-08-30,1992-04-01,722 Moss Bay Blvd.,Kirkland,WA,98033,USA,(206) 555-3412,1,Janet has a BS degree in chemistry.,2
+4,Peacock,Margaret,Sales Representative,1937-09-19,1993-05-03,4110 Old Redmond Rd.,Redmond,WA,98052,USA,(206) 555-8122,1,Margaret holds a BA in English literature.,3
+5,Buchanan,Steven,Sales Manager,1955-03-04,1993-10-17,14 Garrett Hill,London,,SW1 8JR,UK,(71) 555-4848,2,Steven Buchanan graduated from St. Andrews University.,1

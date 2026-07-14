@@ -1,0 +1,68 @@
+============================================================
+SPRINT 11: Performance benchmark
+============================================================
+
+============================================================
+BENCHMARK: Small (1K orders) (1,000 orders)
+============================================================
+  Generated: 4,250 total rows across 4 files
+    customers: 200
+    products:  50
+    orders:    1,000
+    order_details: 3,000
+    customers.csv: 6.7 KB
+    products.csv: 1.5 KB
+    orders.csv: 52.0 KB
+    order_details.csv: 83.4 KB
+
+  Upload: 202 in 2.07s
+  Job ID: baa0636da6d84371ac0e513a19e354a6
+  Analysis time: 50.8s
+  Total: 52.9s
+  Unified: 4,250 rows
+  Relationships: 2
+
+============================================================
+BENCHMARK: Medium (10K orders) (10,000 orders)
+============================================================
+  Generated: 42,500 total rows across 4 files
+    customers: 2,000
+    products:  500
+    orders:    10,000
+    order_details: 30,000
+    customers.csv: 69.4 KB
+    products.csv: 15.8 KB
+    orders.csv: 520.3 KB
+    order_details.csv: 862.5 KB
+
+  Upload: 202 in 2.10s
+  Job ID: 97e5819bbbd94d62b98dcc3b4a2860ad
+  Analysis time: 30.5s
+  Total: 32.6s
+  Unified: 42,500 rows
+  Relationships: 1
+
+============================================================
+BENCHMARK: Large (50K orders) (50,000 orders)
+============================================================
+  Generated: 212,500 total rows across 4 files
+    customers: 10,000
+    products:  2,500
+    orders:    50,000
+    order_details: 150,000
+    customers.csv: 352.0 KB
+    products.csv: 80.6 KB
+    orders.csv: 2601.4 KB
+    order_details.csv: 4404.7 KB
+
+  Upload: 202 in 2.15s
+  Job ID: 729d908d13a14e1cb7e90b953d252f78
+  FAILED: Total rows 212500 exceeds 100000
+
+============================================================
+BENCHMARK SUMMARY
+============================================================
+Size                 Rows       Upload     Analysis   Total     
+------------------------------------------------------------
+Small (1K orders)    4,250      2.07       50.8       52.9      
+Medium (10K orders)  42,500     2.10       30.5       32.6      
